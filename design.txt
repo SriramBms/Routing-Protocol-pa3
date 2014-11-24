@@ -1,0 +1,146 @@
+//Sriram Shantharam
+//sriramsh
+//50097475
+
+I have read and understood the course academic integrity policy located at
+http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity
+
+
+//**Update packet format #1
+//Each row is represented using one 32 bit integer
+//32 bits is split into two 16 bit values based on the update packet format
+struct node{
+  uint32_t serverip;
+  uint32_t serverport;
+  uint32_t f_id_cost;
+};
+
+struct update_packet {
+  uint32_t f_upd_sport;
+  uint32_t serverip;
+  struct node nodes[5];
+};
+
+
+//**Distance vector routing table format
+
+struct routing_entry{
+  char destname[HOST_MAX];
+  uint16_t destid;
+  uint16_t cost;
+  unit16_t nexthop;
+};
+
+struct routing_table{
+  char selfname[HOST_MAX];
+  uint16_t selfid;
+  struct routing_entry othernodes[4];
+};
+
+//structure to maintain cost to neighbors
+
+struct neighbor_cost{
+  char neighborname[HOST_MAX];
+  uint16_t neighborid;
+}
+
+
+//** Select loop
+
+timeval UPDATE_TIMEOUT = (some value based on routing packet update frequency specfied at startup);
+timeval TIMEOUT = UPDATE_TIMEOUT;
+int do_not_reset_timer=0;
+
+
+for(;;){
+    FD_ZERO(&readfds);
+
+    int result;
+    if(!do_not_reset_timer){
+      time_t start_time = get_current_time();
+      TIMEOUT  = UPDATE_TIMEOUT;
+    }
+    if((result = select(fdmax+1,&readfds,NULL,NULL,TIMEOUT))==-1){
+      perror("SELECT failed");
+      exit(6);
+    }
+
+    if(result == 0){
+        do_not_reset_timer = FALSE;
+        send_routing_update();
+        continue;
+
+    }
+
+
+    for(i=0;i<=fdmax;i++){
+      do_not_reset_timer = TRUE;
+
+      if(FD_ISSET(i,&readfds)){
+
+        if(i==STDIN){
+
+          Commandtype = read_input_command();
+          switch (commandtype){
+          case UPDATE:
+            update_routing_cost();
+            send_update();
+            break;
+          case STEP:
+            step();
+            break;
+          case PACKETS:
+            //display packets
+            break;
+          case DISABLE:
+            disable_server_link();
+            break;
+          case ACADEMIC_INTEGRITY:
+            fprintf(stderr,"(c) 2014 Sriram Shantharam (sriramsh@buffalo.edu)\n\n");
+            fprintf(stderr,"I have read and understood the course academic integrity policy located at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity\n\n");
+            break;
+          case EXIT:
+
+            exit(0);
+          case CRASH:
+            simulate_server_crash();
+          case DUMP:
+            build_and_write_routing_packet();
+
+            break;
+          case HELP:
+            display_usage();
+          default:
+            fprintf(stderr,"Invalid command. For a list of supported commands, type 'help'\n");
+
+
+          }
+
+        }
+        else if(i==(router_fd)){
+
+            receiver_udp_packet();
+            track_online_servers();
+
+
+        }else{
+            //handle this case
+
+        }
+
+
+    timeval endtime = get_current_time();
+    TIMEOUT = (TIMEOUT - (end_time - start_time));
+
+}
+
+
+
+//** Strategy for timer implementation
+
+1. Use the timeout field in select syscall to force it to return everytime.
+
+2. This ensure the timer fires at regular interval sending update packets
+
+3. In case syscall returns due to userinput or incoming packets, make a note of the amount of time remaining
+for the timer to fire and set the timeout value to amount of time remaining after handling the syscall
