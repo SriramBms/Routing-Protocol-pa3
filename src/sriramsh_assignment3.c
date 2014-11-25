@@ -50,7 +50,7 @@
 #define DISPLAY_MINIMAL 2
 #define STDIN 0
 #define VERBOSE FALSE
-int debug = FALSE;
+int debug = TRUE;
 
 
 //constants
@@ -115,6 +115,7 @@ fd_set master, readfds;
 int fdmax;
 int yes = 1;
 char * tokenptr;
+int num_received_packets=0;
 //function declarations
 void zprintf(char *);
 void read_topology_file();
@@ -136,6 +137,8 @@ void strToLower(char string[]) {
 
 }
 
+
+
 void toggleDebugLevel(){
 	if(DEBUG)
 		debug = FALSE;
@@ -153,6 +156,16 @@ int getCommandType(char * token){
 		return DISPLAY;
 	else if(strcmp(token, "debug")==0)
 		return DEBUGLVL;
+	else if(strcmp(token, "packets")==0)
+	  return PACKETS;
+	else if(strcmp(token, "disable")==0)
+		return DISABLE;
+	else if(strcmp(token, "crash")==0)
+		return CRASH;
+	else if(strcmp(token, "dump")==0)
+		return DUMP;
+	else if(strcmp(token, "academic_integrity")==0)
+		return INTEGRITY;
 	else
 		return INVALID;
 }
@@ -193,9 +206,15 @@ void dump_routing_table(int mode){
 
 	for(ii = 0; ii < MAX_NEIGHBORS+1; ii++){
 		if(mode == DISPLAY_MINIMAL)
-			fprintf(stderr, "%-15d%-15d%-15d\n", sorted_table[ii].destid, sorted_table[ii].nexthop, sorted_table[ii].cost);
+			//fprintf(stderr, "%-15d%-15d%-15d\n", sorted_table[ii].destid, sorted_table[ii].nexthop, sorted_table[ii].cost);
+			if(sorted_table[ii].nexthop == UINT16_MAX){
+				cse4589_print_and_log("%-15d%-15d%-15d\n", sorted_table[ii].destid, -1, sorted_table[ii].cost);
+			}else{
+				cse4589_print_and_log("%-15d%-15d%-15d\n", sorted_table[ii].destid, sorted_table[ii].nexthop, sorted_table[ii].cost);
+			}
 		else if(mode == DISPLAY_FULL){
-			fprintf(stderr, "%-15d%-15d%-15d%-15d%-15s\n", sorted_table[ii].destid, sorted_table[ii].nexthop, sorted_table[ii].cost, sorted_table[ii].port, sorted_table[ii].destip);
+		 //fprintf(stderr, "%-15d%-15d%-15d%-15d%-15s\n", sorted_table[ii].destid, sorted_table[ii].nexthop, sorted_table[ii].cost, sorted_table[ii].port, sorted_table[ii].destip);
+			cse4589_print_and_log("%-15d%-15d%-15d\n", sorted_table[ii].destid, sorted_table[ii].nexthop, sorted_table[ii].cost);
 		}else{
 			//:|
 		}
@@ -217,7 +236,7 @@ void fill_empty_fields(){
 				}
 			}else{
 				routing_table.othernodes[ii].cost = UINT16_MAX;
-				routing_table.othernodes[ii].nexthop = 0;
+				routing_table.othernodes[ii].nexthop = -1;
 				if(DEBUG){
 					fprintf(stderr, "FEF: cost: %d, nexthop: %d \n", routing_table.othernodes[ii].cost, routing_table.othernodes[ii].nexthop);
 				}
@@ -625,15 +644,61 @@ int main(int argc, char **argv)
 					}
 
 					int commandtype = getCommandType(tokencommand);
+					if(DEBUG){
+						fprintf(stderr, "commandtype: %d \n", commandtype);
+					}
 					switch (commandtype){
 						case DISPLAY:
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							dump_routing_table(DISPLAY_MINIMAL);
 							break;
 						case DEBUGLVL:
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							toggleDebugLevel();
 							break;
+						case UPDATE:
+							;
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+							char infstr[3];
+							uint16_t server1 = atoi(strtok_r(NULL, " ", &tokenptr));
+							uint16_t server2 = atoi(strtok_r(NULL, " ", &tokenptr));
+							strncpy(infstr, strtok_r(NULL, " ", &tokenptr), 3);
+							uint16_t newcost = atoi(infstr);
+
+							if(strcmp(infstr, "inf")==0)
+								newcost = UINT16_MAX;
+							uint16_t targetid;
+							if(server1 == local_id && server2 != local_id){
+								targetid = server2;
+							}else{
+								fprintf(stderr, "Wrong input. Please try again\n");
+
+							}
+							int ii;
+							for (ii = 0; ii < MAX_NEIGHBORS+1; ii++){
+								if(routing_table.othernodes[ii].destid == targetid)
+									routing_table.othernodes[ii].cost = newcost;
+							}
+							break;
+						case PACKETS:
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+							cse4589_print_and_log("%d\n",num_received_packets);
+							break;
+						case STEP:
+							break;
+						case DISABLE:
+							break;
+						case CRASH:
+							break;
+						case DUMP:
+							break;
+						case INTEGRITY:
+							cse4589_print_and_log("I have read and understood the course academic integrity policy \nlocated at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity\n");
+
 						default:
 							;
+							char * invalidmsg = "Invalid command Please try again";
+							cse4589_print_and_log("%s:%s \n",tokencommand,invalidmsg);
 							//do something
 					}
 				}
