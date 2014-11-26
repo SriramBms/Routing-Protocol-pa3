@@ -476,7 +476,7 @@ void send_udp_msg(char * i_ip, int i_port, struct struct_routing_table i_msg){
 	int i,j,rv;
 
 	if(DEBUG)
-	fprintf(stderr,"In send_udp_msg***");
+	fprintf(stderr,"In send_udp_msg*** Sending udp to %s\n", i_ip);
 
 
 
