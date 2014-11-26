@@ -20,6 +20,10 @@
  *
  * This contains the main function. Add further description here....
  */
+
+// Reference:
+// some of the code copied from Beej Guide to Network Programming
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -91,6 +95,7 @@ struct routing_entry{
 	uint16_t cost;
 	uint16_t nexthop;
 	int connected;
+	int sockfd;
 };
 
 struct struct_routing_table{
@@ -100,6 +105,7 @@ struct struct_routing_table{
 
 	struct routing_entry othernodes[MAX_NEIGHBORS+1];
 };
+
 
 
 //global variables
@@ -458,12 +464,78 @@ void getMyIP(char * buf){
 
 }
 
+void send_udp_msg(char * i_ip, int i_port, struct struct_routing_table i_msg){
+	struct addrinfo hints, *ai, *p;
+
+
+	struct sockaddr_storage remoteaddr;
+	socklen_t addrlen;
+	char buf[256];
+	int nbytes;
+	char remoteIP[INET6_ADDRSTRLEN];
+	int i,j,rv;
+
+	if(DEBUG)
+	fprintf(stderr,"In send_udp_msg***");
+
+
+
+	memset(&hints,0, sizeof hints);
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_flags = AI_PASSIVE;
+	char str_port[5];
+
+
+		memset(&str_port, 0, 5);
+		sprintf(str_port, "%d", i_port);
+		if(DEBUG)
+		fprintf(stderr,"str_port:%s \n", str_port);
+		if((rv=getaddrinfo(i_ip,str_port,&hints,&ai)) != 0){
+			fprintf(stderr,"selectserver: %s \n", gai_strerror(rv));
+			exit(3);
+		}
+
+		int sfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+		if(sfd == -1){
+			perror("Error while creating socket \n");
+			exit(4);
+		}
+		/*
+		if(setsockopt(sfd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(int))<0){
+			perror("Error while setting socket for reuse\n");
+			exit(5);
+		}
+		*/
+		int bytessent;
+		/*
+		if((bytessent = sendto(sfd, i_msg, strlen(i_msg), 0, ai->ai_addr, ai->ai_addrlen))==-1){
+				perror("Error while sending bytes");
+		}
+		*/
+		if((bytessent = sendto(sfd, &routing_table, sizeof routing_table, 0, ai->ai_addr, ai->ai_addrlen))==-1){
+				perror("Error while sending bytes");
+		}
+
+		if(bytessent != sizeof (routing_table)){
+			fprintf(stderr, "Partial packet sent\n");
+		}
+		freeaddrinfo(ai);
+
+
+
+
+}
+
+
+
 void init(){
 	getMyIP(routing_table.selfip);
 	if(DEBUG){
 		fprintf(stderr, "Local Ip: %s \n", routing_table.selfip);
 	}
-}
+
+}//end of init
 /**
  * main function
  *
@@ -523,6 +595,8 @@ int main(int argc, char **argv)
 	}
 
 	read_topology_file();
+
+
 	struct addrinfo hints, *ai, *p;
 	char command[200]={0};
 	char tokencommand[50]={0};
@@ -594,11 +668,9 @@ int main(int argc, char **argv)
 			printf("fd %d is a non-listening socket. Returned %d\n", listener,retval);
 
 	}
-
+	FD_SET(STDIN,&master);
 	FD_SET(listener,&master);
 	fdmax = listener;
-	FD_SET(STDIN,&master);
-
 
 	for(;;){
 		FD_ZERO(&readfds);
@@ -685,6 +757,7 @@ int main(int argc, char **argv)
 							cse4589_print_and_log("%d\n",num_received_packets);
 							break;
 						case STEP:
+							send_udp_msg(routing_table.othernodes[3].destip, routing_table.othernodes[3].port, routing_table);
 							break;
 						case DISABLE:
 							break;
@@ -701,6 +774,10 @@ int main(int argc, char **argv)
 							cse4589_print_and_log("%s:%s \n",tokencommand,invalidmsg);
 							//do something
 					}
+				}else if(i==listener){
+					fprintf(stderr, "Received something\n");
+				}else{
+
 				}
 			}
 		}
