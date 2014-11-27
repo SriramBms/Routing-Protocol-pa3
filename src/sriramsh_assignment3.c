@@ -525,7 +525,7 @@ void send_udp_msg(char * i_ip, int i_port){
 				perror("Error while sending bytes");
 		}
 
-		if(bytessent != sizeof (routing_table)){
+		if(bytessent != sizeof (update_packet)){
 			fprintf(stderr, "Partial packet sent\n");
 		}
 
@@ -885,6 +885,7 @@ int main(int argc, char **argv)
 					if(DEBUG){
 						fprintf(stderr, "bytes received: %d\n", bytesrecvd);
 					}
+					num_received_packets++;
 					parse_update_packet(newMessage);
 				}else{
 
