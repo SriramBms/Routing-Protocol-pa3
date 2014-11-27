@@ -126,10 +126,11 @@ int fdmax;
 int yes = 1;
 char * tokenptr;
 int num_received_packets=0;
-int runtime_timeout;
+double runtime_timeout;
 int reset_the_timer=TRUE;
 struct struct_update_packet update_packet = {0};
 double starttime, endtime;
+int node_matrix[MAX_NEIGHBORS+1][MAX_NEIGHBORS+1]={0};
 //function declarations
 void zprintf(char *);
 void read_topology_file();
@@ -139,7 +140,15 @@ void parse_link_details(char*, int);
 void fill_empty_fields();
 int getCommandType(char *);
 void strToLower(char *);
+void loop_small();
 //functions
+
+void loop_small(){
+	int i=0;
+	while(i<1000){
+		i++;
+	}
+}
 
 void strToLower(char string[]) {
 
@@ -754,16 +763,27 @@ int main(int argc, char **argv)
 		FD_ZERO(&readfds);
 		readfds = master;
 		struct timeval select_timeout;
+
 		if(reset_the_timer){
-			zprintf("Resetting timer");
+		//	zprintf("Resetting timer");
+
+
 			starttime = get_current_time();
+
 			runtime_timeout = r_update_interval;
+			//fprintf(stderr, "runtime_timeout: %g\n",(double) runtime_timeout);
 			double w_num = (double)((int)runtime_timeout);
+			//fprintf(stderr, "wnum: %g\n", w_num);
 			double f_num = (runtime_timeout - w_num)*1000000;
+			//fprintf(stderr, "fnum: %g\n", f_num);
+
 			select_timeout.tv_sec = w_num;
 			select_timeout.tv_usec = f_num;
+			;
 		}else{
-			zprintf("Not resetting timer");
+			//zprintf("Not resetting timer");
+
+
 			double w_num = (double)((int)runtime_timeout);
 			double f_num = (runtime_timeout - w_num)*1000000;
 			select_timeout.tv_sec = w_num;
@@ -773,7 +793,7 @@ int main(int argc, char **argv)
 			perror("SELECT failed");
 			exit(6);
 		}
-
+		zprintf("select fired");
 		if(select_result == 0){
 			reset_the_timer = TRUE;
 			create_update_packet();
@@ -796,6 +816,7 @@ int main(int argc, char **argv)
 						fprintf(stderr, "from stdin: %s\n", command);
 					//fprintf(stderr,"Length=%d",len);
 					if(len==0){
+						reset_the_timer = TRUE;
 						continue;
 					}
 
@@ -809,11 +830,13 @@ int main(int argc, char **argv)
 					strcpy(tokencommand,strtok_r(command," ",&tokenptr));
 					if(strlen(tokencommand)<1){
 						FD_CLR(0,&readfds);
+						reset_the_timer = TRUE;
 						continue;
 					}
 					if(tokencommand==NULL ||tokencommand=='\0'){
 						//fprintf(stderr,"enterpressed\n\n");
 						FD_CLR(0,&readfds);
+						reset_the_timer = TRUE;
 						continue;
 					}
 
@@ -827,7 +850,7 @@ int main(int argc, char **argv)
 							dump_routing_table(DISPLAY_MINIMAL);
 							break;
 						case DEBUGLVL:
-							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+							//cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							toggleDebugLevel();
 							break;
 						case UPDATE:
@@ -859,6 +882,7 @@ int main(int argc, char **argv)
 							cse4589_print_and_log("%d\n",num_received_packets);
 							break;
 						case STEP:
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							create_update_packet();
 							send_udp_msg(routing_table.othernodes[3].destip, routing_table.othernodes[3].port);
 							break;
@@ -869,8 +893,9 @@ int main(int argc, char **argv)
 						case DUMP:
 							break;
 						case INTEGRITY:
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							cse4589_print_and_log("I have read and understood the course academic integrity policy \nlocated at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity\n");
-
+							break;
 						default:
 							;
 							char * invalidmsg = "Invalid command Please try again";
@@ -892,15 +917,28 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		zprintf("tag");
 		if(reset_the_timer == FALSE){
-			zprintf("Resetting timer to remaining time");
+			//zprintf("Resetting timer to remaining time");
+			//fprintf(stderr, "Resuming timers ops\n");
 			endtime = get_current_time();
+			fprintf(stderr, "endtime %g\n", endtime);
 			double duration = endtime - starttime;
+			if(DEBUG){
+				fprintf(stderr, "duration: %g", duration);
+			}
+			/*
+			if(duration < 1){
+				reset_the_timer = TRUE;
+			}
+			*/
 			if(duration > r_update_interval){
-				runtime_timeout = 0;
+				runtime_timeout = 0.5;
 			}else{
 				runtime_timeout = (r_update_interval-(endtime - starttime));
 			}
+
+			fprintf(stderr, "runtime_timeout %g\n", runtime_timeout);
 
 		}
 
