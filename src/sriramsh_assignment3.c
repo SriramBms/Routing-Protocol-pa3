@@ -583,7 +583,8 @@ void parse_update_packet(char * i_msg){
 	if(DEBUG){
 		//display contents of packet
 		fprintf(stderr, "Contents of received packet\n");
-		fprintf(stderr, "num fields: %d, server port: %d, server ip %s\n", num_fields, source_port, source_addr);
+		fprintf(stderr, "Received: f_upd_sport: %d", recvupdpkt.f_upd_sport);
+		fprintf(stderr, "num fields: %d, server port: %x, server ip %s\n", num_fields, source_port, source_addr);
 	}
 }
 
