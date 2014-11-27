@@ -466,7 +466,7 @@ void getMyIP(char * buf){
 
 }
 
-void send_udp_msg(char * i_ip, int i_port, struct struct_routing_table i_msg){
+void send_udp_msg(char * i_ip, int i_port){
 	struct addrinfo hints, *ai, *p;
 
 
@@ -515,7 +515,7 @@ void send_udp_msg(char * i_ip, int i_port, struct struct_routing_table i_msg){
 				perror("Error while sending bytes");
 		}
 		*/
-		if((bytessent = sendto(sfd, &routing_table, sizeof routing_table, 0, ai->ai_addr, ai->ai_addrlen))==-1){
+		if((bytessent = sendto(sfd, &update_packet, sizeof update_packet, 0, ai->ai_addr, ai->ai_addrlen))==-1){
 				perror("Error while sending bytes");
 		}
 
@@ -817,7 +817,7 @@ int main(int argc, char **argv)
 							break;
 						case STEP:
 							create_update_packet();
-							send_udp_msg(routing_table.othernodes[3].destip, routing_table.othernodes[3].port, routing_table);
+							send_udp_msg(routing_table.othernodes[3].destip, routing_table.othernodes[3].port);
 							break;
 						case DISABLE:
 							break;
