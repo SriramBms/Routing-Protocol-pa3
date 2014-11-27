@@ -755,6 +755,7 @@ int main(int argc, char **argv)
 		readfds = master;
 		struct timeval select_timeout;
 		if(reset_the_timer){
+			zprintf("Resetting timer");
 			starttime = get_current_time();
 			runtime_timeout = r_update_interval;
 			double w_num = (double)((int)runtime_timeout);
@@ -762,6 +763,7 @@ int main(int argc, char **argv)
 			select_timeout.tv_sec = w_num;
 			select_timeout.tv_usec = f_num;
 		}else{
+			zprintf("Not resetting timer");
 			double w_num = (double)((int)runtime_timeout);
 			double f_num = (runtime_timeout - w_num)*1000000;
 			select_timeout.tv_sec = w_num;
