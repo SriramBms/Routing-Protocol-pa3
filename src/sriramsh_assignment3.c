@@ -893,6 +893,7 @@ int main(int argc, char **argv)
 			}
 		}
 		if(reset_the_timer == FALSE){
+			zprintf("Resetting timer to remaining time");
 			endtime = get_current_time();
 			double duration = endtime - starttime;
 			if(duration > r_update_interval){
