@@ -575,15 +575,12 @@ void parse_update_packet(char * i_msg){
 	char source_addr[INET6_ADDRSTRLEN]={0};
 	struct sockaddr_in rsn;
 	rsn.sin_addr.s_addr = recvupdpkt.serverip;
-	inet_ntop(AF_INET, &(rsn.sin_addr), source_addr, strlen(source_addr));
-
-
-
+	inet_ntop(AF_INET, &(rsn.sin_addr), source_addr, sizeof source_addr);
 
 	if(DEBUG){
 		//display contents of packet
 		fprintf(stderr, "Contents of received packet\n");
-		fprintf(stderr, "Received: f_upd_sport: %d, ip: %d", recvupdpkt.f_upd_sport, recvupdpkt.serverip);
+		fprintf(stderr, "Received: f_upd_sport: %d, ip: %d\n", recvupdpkt.f_upd_sport, recvupdpkt.serverip);
 		fprintf(stderr, "num fields: %d, server port: %x, server ip %s\n", num_fields, source_port, source_addr);
 	}
 }
