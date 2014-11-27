@@ -572,7 +572,7 @@ void parse_update_packet(char * i_msg){
 	memcpy(&recvupdpkt, i_msg, sizeof recvupdpkt);
 	int num_fields = recvupdpkt.f_upd_sport >> 16;
 	int source_port = (recvupdpkt.f_upd_sport << 16)>>16;
-	char source_addr[INET6_ADDRSTRLEN];
+	char source_addr[INET6_ADDRSTRLEN]={0};
 	struct sockaddr_in rsn;
 	rsn.sin_addr.s_addr = recvupdpkt.serverip;
 	inet_ntop(AF_INET, &(rsn.sin_addr), source_addr, strlen(source_addr));
