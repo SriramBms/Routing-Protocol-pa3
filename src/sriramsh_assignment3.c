@@ -763,7 +763,7 @@ int main(int argc, char **argv)
 		FD_ZERO(&readfds);
 		readfds = master;
 		struct timeval select_timeout;
-
+		/*
 		if(reset_the_timer){
 		//	zprintf("Resetting timer");
 
@@ -789,6 +789,22 @@ int main(int argc, char **argv)
 			select_timeout.tv_sec = w_num;
 			select_timeout.tv_usec = f_num;
 		}
+		*/
+
+		//++++++++++++++++++++++++
+		runtime_timeout = r_update_interval;
+		//fprintf(stderr, "runtime_timeout: %g\n",(double) runtime_timeout);
+		double w_num = (double)((int)runtime_timeout);
+		//fprintf(stderr, "wnum: %g\n", w_num);
+		double f_num = (runtime_timeout - w_num)*1000000;
+		//fprintf(stderr, "fnum: %g\n", f_num);
+
+		select_timeout.tv_sec = w_num;
+		select_timeout.tv_usec = f_num;
+		//++++++++++++++++++++++++
+
+
+
 		if((select_result=select(fdmax+1,&readfds,NULL,NULL,&select_timeout))==-1){
 			perror("SELECT failed");
 			exit(6);
@@ -917,7 +933,9 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		zprintf("tag");
+		//zprintf("tag");
+
+		/*
 		if(reset_the_timer == FALSE){
 			//zprintf("Resetting timer to remaining time");
 			//fprintf(stderr, "Resuming timers ops\n");
@@ -927,11 +945,7 @@ int main(int argc, char **argv)
 			if(DEBUG){
 				fprintf(stderr, "duration: %g", duration);
 			}
-			/*
-			if(duration < 1){
-				reset_the_timer = TRUE;
-			}
-			*/
+
 			if(duration > r_update_interval){
 				runtime_timeout = 0.5;
 			}else{
@@ -941,6 +955,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "runtime_timeout %g\n", runtime_timeout);
 
 		}
+		*/
 
 	}
 
