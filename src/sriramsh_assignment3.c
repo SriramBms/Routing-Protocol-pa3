@@ -38,6 +38,7 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <math.h>
 
 
 
@@ -96,6 +97,9 @@ struct routing_entry{
 	uint16_t nexthop;
 	int connected;
 	int sockfd;
+	int valid;
+	int num_tries;
+
 };
 
 struct struct_routing_table{
@@ -122,8 +126,10 @@ int fdmax;
 int yes = 1;
 char * tokenptr;
 int num_received_packets=0;
-
+int runtime_timeout;
+int reset_the_timer=TRUE;
 struct struct_update_packet update_packet = {0};
+double starttime, endtime;
 //function declarations
 void zprintf(char *);
 void read_topology_file();
@@ -580,6 +586,8 @@ void parse_update_packet(char * i_msg){
 	struct sockaddr_in rsn;
 	rsn.sin_addr.s_addr = recvupdpkt.serverip;
 	inet_ntop(AF_INET, &(rsn.sin_addr), source_addr, sizeof source_addr);
+	//strncpy(recvupdpkt.serverip, source_addr, sizeof recvupdpkt.serverip);
+
 
 	if(DEBUG){
 		//display contents of packet
@@ -587,8 +595,16 @@ void parse_update_packet(char * i_msg){
 		fprintf(stderr, "Received: f_upd_sport: %d, ip: %d\n", recvupdpkt.f_upd_sport, recvupdpkt.serverip);
 		fprintf(stderr, "num fields: %d, server port: %x, server ip %s\n", num_fields, source_port, source_addr);
 	}
+
+
 }
 
+double get_current_time(){
+	struct timeval cur_time;
+	gettimeofday(&cur_time);
+	double current_time = cur_time.tv_sec + (cur_time.tv_usec)/1000000;
+	return current_time;
+}
 
 void init(){
 	getMyIP(routing_table.selfip);
@@ -654,7 +670,7 @@ int main(int argc, char **argv)
 	if(DEBUG){
 		fprintf(stderr, "Arguments: File name: %s Update interval %f \n", t_file_name, r_update_interval);
 	}
-
+	runtime_timeout = r_update_interval;
 	read_topology_file();
 
 
@@ -671,6 +687,7 @@ int main(int argc, char **argv)
 	int i,j,rv;
 	FD_ZERO(&master);
 	FD_ZERO(&readfds);
+	int select_result=0;
 	//local vars
 
 
@@ -736,13 +753,35 @@ int main(int argc, char **argv)
 	for(;;){
 		FD_ZERO(&readfds);
 		readfds = master;
-		if(select(fdmax+1,&readfds,NULL,NULL,NULL)==-1){
+		struct timeval select_timeout;
+		if(reset_the_timer){
+			starttime = get_current_time();
+			runtime_timeout = r_update_interval;
+			double w_num = (double)((int)runtime_timeout);
+			double f_num = (runtime_timeout - w_num)*1000000;
+			select_timeout.tv_sec = w_num;
+			select_timeout.tv_usec = f_num;
+		}else{
+			double w_num = (double)((int)runtime_timeout);
+			double f_num = (runtime_timeout - w_num)*1000000;
+			select_timeout.tv_sec = w_num;
+			select_timeout.tv_usec = f_num;
+		}
+		if((select_result=select(fdmax+1,&readfds,NULL,NULL,&select_timeout))==-1){
 			perror("SELECT failed");
 			exit(6);
+		}
+
+		if(select_result == 0){
+			reset_the_timer = TRUE;
+			create_update_packet();
+			send_udp_msg(routing_table.othernodes[3].destip, routing_table.othernodes[3].port);
+			continue;
 		}
 		//fprintf(stderr,"\n >>> \n");
 
 		for(i=0;i<=fdmax;i++){
+			reset_the_timer = FALSE;
 			//fprintf(stderr, "checking fd %d\n",i);
 			if(FD_ISSET(i,&readfds)){
 				if(VERBOSE)
@@ -850,6 +889,17 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		if(reset_the_timer == FALSE){
+			endtime = get_current_time();
+			double duration = endtime - starttime;
+			if(duration > r_update_interval){
+				runtime_timeout = 0;
+			}else{
+				runtime_timeout = (r_update_interval-(endtime - starttime));
+			}
+
+		}
+
 	}
 
 
