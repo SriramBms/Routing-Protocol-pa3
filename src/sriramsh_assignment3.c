@@ -839,7 +839,7 @@ int main(int argc, char **argv)
 					fprintf(stderr, "Received something\n");
 					char newMessage[1024];
 					recvfrom(listener, newMessage, sizeof newMessage, 0, NULL, NULL);
-
+					parse_update_packet(newMessage);
 				}else{
 
 				}
