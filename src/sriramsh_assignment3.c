@@ -522,6 +522,10 @@ void send_udp_msg(char * i_ip, int i_port){
 		if(bytessent != sizeof (routing_table)){
 			fprintf(stderr, "Partial packet sent\n");
 		}
+
+		if(DEBUG){
+			fprintf(stderr, "bytes sent: %d\n", bytessent);
+		}
 		freeaddrinfo(ai);
 
 
@@ -836,7 +840,10 @@ int main(int argc, char **argv)
 					FD_CLR(listener, &readfds);
 					fprintf(stderr, "Received something\n");
 					char newMessage[1024];
-					recvfrom(listener, newMessage, sizeof newMessage, 0, NULL, NULL);
+					int bytesrecvd = recvfrom(listener, newMessage, sizeof newMessage, 0, NULL, NULL);
+					if(DEBUG){
+						fprintf(stderr, "bytes received: %d\n", bytesrecvd);
+					}
 					parse_update_packet(newMessage);
 				}else{
 
