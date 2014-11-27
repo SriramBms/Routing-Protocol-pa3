@@ -542,13 +542,13 @@ void create_update_packet(){
 	}
 	*/
 	update_packet.f_upd_sport = update_packet.f_upd_sport | routing_table.port;
-	if(DEBUG){
-		fprintf(stderr,"f_upd_sport: %d: %x \n", (int)update_packet.f_upd_sport, (int)update_packet.f_upd_sport);
-	}
+
 	struct sockaddr_in sa;
 	inet_pton(AF_INET, routing_table.selfip, &(sa.sin_addr));
 	update_packet.serverip = sa.sin_addr.s_addr;
-
+	if(DEBUG){
+		fprintf(stderr,"f_upd_sport: %d: %x , serverip: %d\n", (int)update_packet.f_upd_sport, (int)update_packet.f_upd_sport, sa.sin_addr.s_addr);
+	}
 	int ii;
 	for(ii = 0; ii < MAX_NEIGHBORS+1; ii++){
 		struct sockaddr_in sn;
@@ -583,7 +583,7 @@ void parse_update_packet(char * i_msg){
 	if(DEBUG){
 		//display contents of packet
 		fprintf(stderr, "Contents of received packet\n");
-		fprintf(stderr, "Received: f_upd_sport: %d", recvupdpkt.f_upd_sport);
+		fprintf(stderr, "Received: f_upd_sport: %d, ip: %d", recvupdpkt.f_upd_sport, recvupdpkt.serverip);
 		fprintf(stderr, "num fields: %d, server port: %x, server ip %s\n", num_fields, source_port, source_addr);
 	}
 }
