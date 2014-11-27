@@ -122,6 +122,8 @@ int fdmax;
 int yes = 1;
 char * tokenptr;
 int num_received_packets=0;
+
+struct struct_update_packet update_packet = {0};
 //function declarations
 void zprintf(char *);
 void read_topology_file();
@@ -526,7 +528,64 @@ void send_udp_msg(char * i_ip, int i_port, struct struct_routing_table i_msg){
 
 
 }
+void create_update_packet(){
+	update_packet.f_upd_sport = (uint16_t)num_servers;
+	/*
+	if(DEBUG){
+		fprintf(stderr,"f_upd_sport: %d: %x \n", (int)update_packet.f_upd_sport, (int)update_packet.f_upd_sport);
+	}
+	*/
+	update_packet.f_upd_sport = update_packet.f_upd_sport << 16;
+	/*
+	if(DEBUG){
+		fprintf(stderr,"f_upd_sport: %d: %x \n", (int)update_packet.f_upd_sport, (int)update_packet.f_upd_sport);
+	}
+	*/
+	update_packet.f_upd_sport = update_packet.f_upd_sport | routing_table.port;
+	if(DEBUG){
+		fprintf(stderr,"f_upd_sport: %d: %x \n", (int)update_packet.f_upd_sport, (int)update_packet.f_upd_sport);
+	}
+	struct sockaddr_in sa;
+	inet_pton(AF_INET, routing_table.selfip, &(sa.sin_addr));
+	update_packet.serverip = sa.sin_addr.s_addr;
 
+	int ii;
+	for(ii = 0; ii < MAX_NEIGHBORS+1; ii++){
+		struct sockaddr_in sn;
+		inet_pton(AF_INET, routing_table.othernodes[ii].destip, &(sn.sin_addr));
+		update_packet.nodes[ii].serverip = sn.sin_addr.s_addr;
+		update_packet.nodes[ii].serverport = routing_table.othernodes[ii].port;
+		update_packet.nodes[ii].serverport = update_packet.nodes[ii].serverport << 16;
+		update_packet.nodes[ii].f_id_cost = routing_table.othernodes[ii].destid;
+		update_packet.nodes[ii].f_id_cost = update_packet.nodes[ii].f_id_cost << 16;
+		update_packet.nodes[ii].f_id_cost = update_packet.nodes[ii].f_id_cost | routing_table.othernodes[ii].cost;
+
+	}
+
+
+
+
+}
+
+void parse_update_packet(char * i_msg){
+	struct struct_update_packet recvupdpkt = {0};
+	memcpy(&recvupdpkt, i_msg, sizeof recvupdpkt);
+	int num_fields = recvupdpkt.f_upd_sport >> 16;
+	int source_port = recvupdpkt.f_upd_sport & 0x00ff;
+	char source_addr[INET6_ADDRSTRLEN];
+	struct sockaddr_in rsn;
+	rsn.sin_addr.s_addr = recvupdpkt.serverip;
+	inet_ntop(AF_INET, &(rsn.sin_addr), source_addr, strlen(source_addr));
+
+
+
+
+	if(DEBUG){
+		//display contents of packet
+		fprintf(stderr, "Contents of received packet\n");
+		fprintf(stderr, "num fields: %d, server port: %d, server ip %s\n", num_fields, source_port, source_addr);
+	}
+}
 
 
 void init(){
@@ -757,6 +816,7 @@ int main(int argc, char **argv)
 							cse4589_print_and_log("%d\n",num_received_packets);
 							break;
 						case STEP:
+							create_update_packet();
 							send_udp_msg(routing_table.othernodes[3].destip, routing_table.othernodes[3].port, routing_table);
 							break;
 						case DISABLE:
@@ -775,7 +835,11 @@ int main(int argc, char **argv)
 							//do something
 					}
 				}else if(i==listener){
+					FD_CLR(listener, &readfds);
 					fprintf(stderr, "Received something\n");
+					char newMessage[1024];
+					recvfrom(listener, newMessage, sizeof newMessage, 0, NULL, NULL);
+
 				}else{
 
 				}
