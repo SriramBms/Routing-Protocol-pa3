@@ -145,6 +145,7 @@ void loop_small();
 void send_updates();
 int get_cost_for_id(int);
 void print_cost_matrix();
+int get_routing_table_index_for_id(int);
 //functions
 
 void loop_small(){
@@ -472,6 +473,15 @@ int get_cost_for_id(int id){
 	}
 }
 
+
+int get_cost_to_node(int id){
+	int j;
+	for(j = 0; j < MAX_NEIGHBORS + 1; j++){
+		if(init_costs.othernodes[j].destid == id){
+			return init_costs.othernodes[j].cost;
+		}
+	}
+}
 void print_cost_matrix(){
 	int j,k;
 	for(j = 0; j < num_servers; j++){
@@ -604,6 +614,15 @@ int is_ip_valid(char * i_ip){
 		}
 	}
 }
+
+int get_id_for_ip(char * i_ip){
+	int j;
+	for(j = 0; j < MAX_NEIGHBORS + 1; j++){
+		if(strcmp(routing_table.othernodes[j].destip, i_ip)==0){
+			return routing_table.othernodes[j].destid;
+		}
+	}
+}
 void create_update_packet(){
 	update_packet.f_upd_sport = (uint16_t)num_servers;
 	/*
@@ -640,6 +659,8 @@ void create_update_packet(){
 
 }
 
+
+
 void parse_update_packet(char * i_msg){
 	struct struct_update_packet recvupdpkt = {0};
 	memcpy(&recvupdpkt, i_msg, sizeof recvupdpkt);
@@ -667,10 +688,11 @@ void parse_update_packet(char * i_msg){
 	uint32_t ipaddress_list[5];
 	int port_list[5];
 	int cost_list[5];
+	int n_server_id;
 	if(DEBUG)
 		fprintf(stderr, "parsing neighbor costs\n");
 	for(j = 0; j < num_fields; j++){
-		int n_server_id = (recvupdpkt.nodes[j].f_id_cost >> 16);
+		n_server_id = (recvupdpkt.nodes[j].f_id_cost >> 16);
 		ipaddress_list[n_server_id - 1] = recvupdpkt.nodes[j].serverip;
 		port_list[n_server_id - 1] = (recvupdpkt.nodes[j].serverport >> 16);
 		cost_list[n_server_id - 1] = (recvupdpkt.nodes[j].f_id_cost <<  16) >> 16;
@@ -683,10 +705,30 @@ void parse_update_packet(char * i_msg){
 
 	//+++++++++ run DV algo +++++++++++++//
 
-
+	int CostToN = get_cost_to_node(get_id_for_ip(source_addr));
+	int DnToY;
+	for(j = 0; j < num_fields; j++){
+		if((j+1)==routing_table.selfid)
+			continue;
+		DnToY = cost_list[j];
+		if((CostToN + DnToY)<node_matrix[routing_table.selfid-1][j]){
+			node_matrix[routing_table.selfid-1][j] = (CostToN + DnToY);
+			int index = get_routing_table_index_for_id(j);
+			routing_table.othernodes[index].nexthop = get_id_for_ip(source_addr);
+			routing_table.othernodes[index].cost = (CostToN + DnToY);
+		}
+	}
 
 }
 
+int get_routing_table_index_for_id(int id){
+	int j;
+	for(j = 0; j < MAX_NEIGHBORS; j++){
+		if(routing_table.othernodes[j].destid == id){
+			return j;
+		}
+	}
+}
 
 
 void send_updates(){
@@ -963,11 +1005,15 @@ int main(int argc, char **argv)
 								fprintf(stderr, "Wrong input. Please try again\n");
 
 							}
+							routing_table = init_costs;
 							int ii;
 							for (ii = 0; ii < MAX_NEIGHBORS+1; ii++){
 								if(routing_table.othernodes[ii].destid == targetid)
 									routing_table.othernodes[ii].cost = newcost;
 							}
+							init_costs = routing_table;
+							send_updates();
+
 							break;
 						case PACKETS:
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
