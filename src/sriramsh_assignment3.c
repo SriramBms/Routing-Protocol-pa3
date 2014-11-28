@@ -68,6 +68,7 @@ int debug = TRUE;
 #define DUMP 7
 #define INTEGRITY 8
 #define DEBUGLVL 9
+#define COSTMAT 10
 #define INVALID 0
 
 //structures
@@ -96,7 +97,6 @@ struct routing_entry{
 	uint16_t cost;
 	uint16_t nexthop;
 	int connected;
-	int sockfd;
 	int valid;
 	int num_tries;
 
@@ -117,7 +117,8 @@ char t_file_name[FILEPATH_LEN]; //topology file name
 float r_update_interval; // routing update interval
 int num_servers;
 int num_edges;
-struct struct_routing_table routing_table = {0};
+struct struct_routing_table routing_table = {0}, init_costs = {0};
+
 struct routing_entry sorted_table[MAX_NEIGHBORS+1] = {0};
 int routing_update_counter=0;
 int local_id;
@@ -129,8 +130,8 @@ int num_received_packets=0;
 double runtime_timeout;
 int reset_the_timer=TRUE;
 struct struct_update_packet update_packet = {0};
-double starttime, endtime;
-int node_matrix[MAX_NEIGHBORS+1][MAX_NEIGHBORS+1]={0};
+int node_matrix[MAX_NEIGHBORS+1][MAX_NEIGHBORS+1]={UINT16_MAX};
+struct timeval starttime, endtime;
 //function declarations
 void zprintf(char *);
 void read_topology_file();
@@ -141,6 +142,9 @@ void fill_empty_fields();
 int getCommandType(char *);
 void strToLower(char *);
 void loop_small();
+void send_updates();
+int get_cost_for_id(int);
+void print_cost_matrix();
 //functions
 
 void loop_small(){
@@ -189,6 +193,8 @@ int getCommandType(char * token){
 		return DUMP;
 	else if(strcmp(token, "academic_integrity")==0)
 		return INTEGRITY;
+	else if(strcmp(token, "costmat")==0)
+		return COSTMAT;
 	else
 		return INVALID;
 }
@@ -266,8 +272,11 @@ void fill_empty_fields(){
 			}
 		}
 	}
-	dump_routing_table(DISPLAY_FULL);
-	dump_routing_table(DISPLAY_MINIMAL);
+
+
+
+//	dump_routing_table(DISPLAY_FULL);
+	//dump_routing_table(DISPLAY_MINIMAL);
 }
 
 
@@ -302,6 +311,8 @@ void parse_link_details (char * i_string, int strlen){
 			routing_table.othernodes[ii].cost = (uint16_t)atoi(strtok_r(NULL, " ", &tokptr));
 			routing_table.othernodes[ii].nexthop = tempval;
 			routing_table.othernodes[ii].connected = TRUE;
+			routing_table.othernodes[ii].valid = TRUE;
+			routing_table.othernodes[ii].num_tries = 0;
 		}
 	}
 
@@ -434,9 +445,43 @@ void read_topology_file(){
 	}
 
 	fill_empty_fields();
+	init_costs = routing_table;
 
+	//setup the cost matrix
+	int j,k;
+	for(j = 0;j < num_servers; j++){
+		if((j+1) == routing_table.selfid){
+			for(k = 0; k < num_servers; k++){
+				node_matrix[j][k] = get_cost_for_id(k+1);
+			}
+		}
+	}
+
+ if(DEBUG){
+	print_cost_matrix();
+ }
 
 }
+
+int get_cost_for_id(int id){
+	int j;
+	for(j = 0;j < MAX_NEIGHBORS + 1; j++){
+		if(routing_table.othernodes[j].destid == id){
+			return routing_table.othernodes[j].cost;
+		}
+	}
+}
+
+void print_cost_matrix(){
+	int j,k;
+	for(j = 0; j < num_servers; j++){
+		for(k = 0; k < num_servers; k++){
+			fprintf(stderr, "|   %d ", node_matrix[j][k]);
+		}
+			fprintf(stderr, "\n");
+	}
+}
+
 
 void zprintf(char * msg){
 	if(DEBUG){
@@ -547,6 +592,18 @@ void send_udp_msg(char * i_ip, int i_port){
 
 
 }
+
+int is_ip_valid(char * i_ip){
+	int j;
+	for(j = 0; j < MAX_NEIGHBORS + 1; j++){
+		if(strcmp(routing_table.othernodes[j].destip, i_ip)==0){
+			if(routing_table.othernodes[j].valid)
+				return TRUE;
+			else
+				return FALSE;
+		}
+	}
+}
 void create_update_packet(){
 	update_packet.f_upd_sport = (uint16_t)num_servers;
 	/*
@@ -581,9 +638,6 @@ void create_update_packet(){
 
 	}
 
-
-
-
 }
 
 void parse_update_packet(char * i_msg){
@@ -595,7 +649,7 @@ void parse_update_packet(char * i_msg){
 	struct sockaddr_in rsn;
 	rsn.sin_addr.s_addr = recvupdpkt.serverip;
 	inet_ntop(AF_INET, &(rsn.sin_addr), source_addr, sizeof source_addr);
-	//strncpy(recvupdpkt.serverip, source_addr, sizeof recvupdpkt.serverip);
+
 
 
 	if(DEBUG){
@@ -605,13 +659,47 @@ void parse_update_packet(char * i_msg){
 		fprintf(stderr, "num fields: %d, server port: %x, server ip %s\n", num_fields, source_port, source_addr);
 	}
 
+	if(!is_ip_valid(source_addr))
+		return;
+
+	int j;
+
+	uint32_t ipaddress_list[5];
+	int port_list[5];
+	int cost_list[5];
+	for(j = 0; j < num_fields; j++){
+		int n_server_id = (recvupdpkt.nodes[j].f_id_cost >> 16);
+		ipaddress_list[n_server_id - 1] = recvupdpkt.nodes[j].serverip;
+		port_list[n_server_id - 1] = (recvupdpkt.nodes[j].serverport >> 16);
+		cost_list[n_server_id - 1] = (recvupdpkt.nodes[j].f_id_cost <<  16) >> 16;
+		if(DEBUG){
+			fprintf(stderr, " ++++++ ipaddr: %d port %d cost %d\n", ipaddress_list[n_server_id - 1],port_list[n_server_id - 1],cost_list[n_server_id - 1]);
+
+		}
+
+	}
 
 }
 
+
+
+void send_updates(){
+	create_update_packet();
+	int ii = 0;
+	for (ii = 0; ii < MAX_NEIGHBORS+1; ii++){
+		if(routing_table.othernodes[ii].connected){
+			send_udp_msg(routing_table.othernodes[ii].destip, routing_table.othernodes[ii].port);
+		}
+	}
+
+}
 double get_current_time(){
 	struct timeval cur_time;
-	gettimeofday(&cur_time);
+	gettimeofday(&cur_time, NULL);
 	double current_time = cur_time.tv_sec + (cur_time.tv_usec)/1000000;
+	if(DEBUG){
+		fprintf(stderr, "Current time: %g", current_time);
+	}
 	return current_time;
 }
 
@@ -758,51 +846,28 @@ int main(int argc, char **argv)
 	FD_SET(STDIN,&master);
 	FD_SET(listener,&master);
 	fdmax = listener;
-
+	runtime_timeout = r_update_interval;
 	for(;;){
 		FD_ZERO(&readfds);
 		readfds = master;
 		struct timeval select_timeout;
-		/*
-		if(reset_the_timer){
-		//	zprintf("Resetting timer");
 
-
-			starttime = get_current_time();
-
-			runtime_timeout = r_update_interval;
-			//fprintf(stderr, "runtime_timeout: %g\n",(double) runtime_timeout);
-			double w_num = (double)((int)runtime_timeout);
-			//fprintf(stderr, "wnum: %g\n", w_num);
-			double f_num = (runtime_timeout - w_num)*1000000;
-			//fprintf(stderr, "fnum: %g\n", f_num);
-
-			select_timeout.tv_sec = w_num;
-			select_timeout.tv_usec = f_num;
-			;
-		}else{
-			//zprintf("Not resetting timer");
-
-
-			double w_num = (double)((int)runtime_timeout);
-			double f_num = (runtime_timeout - w_num)*1000000;
-			select_timeout.tv_sec = w_num;
-			select_timeout.tv_usec = f_num;
-		}
-		*/
 
 		//++++++++++++++++++++++++
-		runtime_timeout = r_update_interval;
+
+
+
+
 		//fprintf(stderr, "runtime_timeout: %g\n",(double) runtime_timeout);
-		double w_num = (double)((int)runtime_timeout);
+		double w_num = (double)(runtime_timeout);
 		//fprintf(stderr, "wnum: %g\n", w_num);
-		double f_num = (runtime_timeout - w_num)*1000000;
+		//double f_num = (runtime_timeout - w_num)*1000000;
 		//fprintf(stderr, "fnum: %g\n", f_num);
 
-		select_timeout.tv_sec = w_num;
-		select_timeout.tv_usec = f_num;
+		select_timeout.tv_sec = (time_t)w_num;
+		select_timeout.tv_usec = 0;
 		//++++++++++++++++++++++++
-
+		gettimeofday(&starttime,NULL);
 
 
 		if((select_result=select(fdmax+1,&readfds,NULL,NULL,&select_timeout))==-1){
@@ -811,15 +876,16 @@ int main(int argc, char **argv)
 		}
 		zprintf("select fired");
 		if(select_result == 0){
-			reset_the_timer = TRUE;
-			create_update_packet();
-			send_udp_msg(routing_table.othernodes[3].destip, routing_table.othernodes[3].port);
+			runtime_timeout = r_update_interval;
+			zprintf("1");
+			send_updates();
+
 			continue;
 		}
 		//fprintf(stderr,"\n >>> \n");
 
 		for(i=0;i<=fdmax;i++){
-			reset_the_timer = FALSE;
+
 			//fprintf(stderr, "checking fd %d\n",i);
 			if(FD_ISSET(i,&readfds)){
 				if(VERBOSE)
@@ -832,7 +898,9 @@ int main(int argc, char **argv)
 						fprintf(stderr, "from stdin: %s\n", command);
 					//fprintf(stderr,"Length=%d",len);
 					if(len==0){
-						reset_the_timer = TRUE;
+						zprintf("len 0");
+						//gettimeofday(&endtime,NULL);
+					//	runtime_timeout = (double)(r_update_interval -endtime.tv_sec + starttime.tv_sec);
 						continue;
 					}
 
@@ -844,18 +912,20 @@ int main(int argc, char **argv)
 					//fprintf(stderr,"Input: %s\n",command);
 
 					strcpy(tokencommand,strtok_r(command," ",&tokenptr));
+					/*
 					if(strlen(tokencommand)<1){
 						FD_CLR(0,&readfds);
-						reset_the_timer = TRUE;
-						continue;
-					}
-					if(tokencommand==NULL ||tokencommand=='\0'){
-						//fprintf(stderr,"enterpressed\n\n");
-						FD_CLR(0,&readfds);
-						reset_the_timer = TRUE;
+						zprintf("2");
 						continue;
 					}
 
+					if(tokencommand==NULL ||tokencommand=='\0'){
+						//fprintf(stderr,"enterpressed\n\n");
+						FD_CLR(0,&readfds);
+						zprintf("3");
+						continue;
+					}
+					*/
 					int commandtype = getCommandType(tokencommand);
 					if(DEBUG){
 						fprintf(stderr, "commandtype: %d \n", commandtype);
@@ -896,11 +966,15 @@ int main(int argc, char **argv)
 						case PACKETS:
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							cse4589_print_and_log("%d\n",num_received_packets);
+							num_received_packets = 0;
 							break;
 						case STEP:
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
-							create_update_packet();
+							/*create_update_packet();
 							send_udp_msg(routing_table.othernodes[3].destip, routing_table.othernodes[3].port);
+							*/
+							zprintf("2");
+							send_updates();
 							break;
 						case DISABLE:
 							break;
@@ -911,6 +985,9 @@ int main(int argc, char **argv)
 						case INTEGRITY:
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							cse4589_print_and_log("I have read and understood the course academic integrity policy \nlocated at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity\n");
+							break;
+						case COSTMAT:
+							print_cost_matrix();
 							break;
 						default:
 							;
@@ -927,6 +1004,7 @@ int main(int argc, char **argv)
 						fprintf(stderr, "bytes received: %d\n", bytesrecvd);
 					}
 					num_received_packets++;
+
 					parse_update_packet(newMessage);
 				}else{
 
@@ -934,28 +1012,26 @@ int main(int argc, char **argv)
 			}
 		}
 		//zprintf("tag");
-
-		/*
-		if(reset_the_timer == FALSE){
-			//zprintf("Resetting timer to remaining time");
-			//fprintf(stderr, "Resuming timers ops\n");
-			endtime = get_current_time();
-			fprintf(stderr, "endtime %g\n", endtime);
-			double duration = endtime - starttime;
+		gettimeofday(&endtime,NULL);
+		if(DEBUG){
+			fprintf(stderr, "end-start: %g\n",(double)(endtime.tv_sec - starttime.tv_sec));
+		}
+		if((endtime.tv_sec - starttime.tv_sec)>=r_update_interval){
 			if(DEBUG){
-				fprintf(stderr, "duration: %g", duration);
+				fprintf(stderr, "e-s: %g, r_u_i: %g\n", (double)(endtime.tv_sec - starttime.tv_sec), r_update_interval);
 			}
+			runtime_timeout = r_update_interval;
+			zprintf("3");
+			send_updates();
 
-			if(duration > r_update_interval){
-				runtime_timeout = 0.5;
-			}else{
-				runtime_timeout = (r_update_interval-(endtime - starttime));
-			}
+		}else{
+			zprintf("4");
 
-			fprintf(stderr, "runtime_timeout %g\n", runtime_timeout);
+		runtime_timeout = (double)(r_update_interval -(endtime.tv_sec - starttime.tv_sec));
 
 		}
-		*/
+
+
 
 	}
 
