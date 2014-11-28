@@ -675,11 +675,15 @@ void parse_update_packet(char * i_msg){
 		port_list[n_server_id - 1] = (recvupdpkt.nodes[j].serverport >> 16);
 		cost_list[n_server_id - 1] = (recvupdpkt.nodes[j].f_id_cost <<  16) >> 16;
 		if(DEBUG){
-			fprintf(stderr, " ++++++ ipaddr: %d port %d cost %d\n", ipaddress_list[n_server_id - 1],port_list[n_server_id - 1],cost_list[n_server_id - 1]);
+			fprintf(stderr, " ++++++id: %d ipaddr: %d port %d cost %d\n",n_server_id, ipaddress_list[n_server_id - 1],port_list[n_server_id - 1],cost_list[n_server_id - 1]);
 
 		}
 
 	}
+
+	//+++++++++ run DV algo +++++++++++++//
+
+
 
 }
 
