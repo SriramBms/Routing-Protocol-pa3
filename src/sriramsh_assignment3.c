@@ -667,6 +667,8 @@ void parse_update_packet(char * i_msg){
 	uint32_t ipaddress_list[5];
 	int port_list[5];
 	int cost_list[5];
+	if(DEBUG)
+		fprintf(stderr, "parsing neighbor costs\n");
 	for(j = 0; j < num_fields; j++){
 		int n_server_id = (recvupdpkt.nodes[j].f_id_cost >> 16);
 		ipaddress_list[n_server_id - 1] = recvupdpkt.nodes[j].serverip;
