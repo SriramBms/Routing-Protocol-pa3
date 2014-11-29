@@ -55,7 +55,7 @@
 #define DISPLAY_MINIMAL 2
 #define STDIN 0
 #define VERBOSE FALSE
-int debug = FALSE;
+int debug = TRUE;
 
 
 //constants
