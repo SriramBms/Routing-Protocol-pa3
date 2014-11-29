@@ -726,15 +726,17 @@ void parse_update_packet(char * i_msg){
 		if(DEBUG){
 			fprintf(stderr, "node_matrix: %d\n", node_matrix[routing_table.selfid-1][j]);
 		}
+		int index;
 		if((CostToN + DnToY) <= node_matrix[routing_table.selfid-1][j]){
 			node_matrix[routing_table.selfid-1][j] = (CostToN + DnToY);
-			int index = get_routing_table_index_for_id(j+1);
+			index = get_routing_table_index_for_id(j+1);
 			routing_table.othernodes[index].nexthop = get_id_for_ip(source_addr);
 			routing_table.othernodes[index].cost = (CostToN + DnToY);
-			if(DEBUG){
-				fprintf(stderr, "---------recv sum < present sum| index: %d routetbl nexthop: %d cost %d\n", index,routing_table.othernodes[index].nexthop,routing_table.othernodes[index].cost  );
-			}
+		
 
+		}
+		if(DEBUG){
+			fprintf(stderr, "---------recv sum < present sum| index: %d routetbl nexthop: %d cost %d\n", index,routing_table.othernodes[index].nexthop,routing_table.othernodes[index].cost  );
 		}
 	}
 
