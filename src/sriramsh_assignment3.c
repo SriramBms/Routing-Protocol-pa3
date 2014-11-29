@@ -1113,6 +1113,16 @@ gettimeofday(&starttime,NULL);
 									routing_table.othernodes[ii].cost = newcost;
 							}
 							init_costs = routing_table;
+
+							//setup node matrix
+							int jl,kl;
+							for(jl = 0;jl < num_servers; jl++){
+								if((jl+1) == routing_table.selfid){
+									for(kl = 0; kl < num_servers; kl++){
+										node_matrix[jl][kl] = get_cost_for_id(kl+1);
+									}
+								}
+							}
 							send_updates();
 
 							break;
