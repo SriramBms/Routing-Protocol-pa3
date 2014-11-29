@@ -853,8 +853,26 @@ void disable_node(int id){
 
 }//end disable node
 
+void increment_pkt_counters(){
+	int i;
+	for(i = 0; i < MAX_NEIGHBORS+1;i++){
+		routing_table.othernodes[i].num_tries++;
+		if(routing_table.othernodes[i].num_tries>=3){
+			routing_table.othernodes[i].connected = FALSE;
+			routing_table.othernodes[i].valid = FALSE;
+			routing_table.othernodes[i].cost = UINT16_MAX;
+		}
+	}
+}
 
-
+void reset_counter(int id){
+	int i;
+	for(i = 0; i < MAX_NEIGHBORS + 1; i++){
+		if(routing_table.othernodes[i].destid==id){
+			routing_table.othernodes[i].num_tries = 0;
+		}
+	}
+}
 
 
 
@@ -1089,10 +1107,11 @@ gettimeofday(&starttime,NULL);
 			perror("SELECT failed");
 			exit(6);
 		}
-		zprintf("select fired");
+		//zprintf("select fired");
 		if(select_result == 0){
 			runtime_timeout = r_update_interval;
-			zprintf("1");
+			zprintf("select timeout");
+			increment_pkt_counters();
 			send_updates();
 
 			continue;
@@ -1251,6 +1270,8 @@ gettimeofday(&starttime,NULL);
 								break;
 							}
 
+
+
 							int j;
 							for(j = 0; j < MAX_NEIGHBORS +1; j++){
 								if(routing_table.othernodes[j].destid == dserverID){
@@ -1378,6 +1399,7 @@ gettimeofday(&starttime,NULL);
 			long duration = (endtime.tv_sec - starttime.tv_sec);
 			if(duration > r_update_interval){
 				send_updates();
+				increment_pkt_counters();
 				reset_the_timer = TRUE;
 			}else{
 				runtime_timeout = (double)(r_update_interval -(endtime.tv_sec - starttime.tv_sec));
