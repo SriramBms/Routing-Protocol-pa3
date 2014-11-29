@@ -920,21 +920,48 @@ int main(int argc, char **argv)
 		struct timeval select_timeout;
 
 
+
+
+
+
+/*
+
+double w_num = (double)(runtime_timeout);
+
+
+select_timeout.tv_sec = (time_t)w_num;
+select_timeout.tv_usec = 0;
+gettimeofday(&starttime,NULL);
+*/
 		//++++++++++++++++++++++++
 
+	  if(reset_the_timer){
 
 
 
-		//fprintf(stderr, "runtime_timeout: %g\n",(double) runtime_timeout);
-		double w_num = (double)(runtime_timeout);
-		//fprintf(stderr, "wnum: %g\n", w_num);
-		//double f_num = (runtime_timeout - w_num)*1000000;
-		//fprintf(stderr, "fnum: %g\n", f_num);
+		double w_num = (double)(r_update_interval);
+
 
 		select_timeout.tv_sec = (time_t)w_num;
 		select_timeout.tv_usec = 0;
-		//++++++++++++++++++++++++
 		gettimeofday(&starttime,NULL);
+	}else{
+		double w_num = (double)(runtime_timeout);
+
+
+		select_timeout.tv_sec = (time_t)w_num;
+		select_timeout.tv_usec = 0;
+		//gettimeofday(&starttime,NULL);
+	}
+
+		//++++++++++++++++++++++++
+
+
+
+
+
+
+
 
 
 		if((select_result=select(fdmax+1,&readfds,NULL,NULL,&select_timeout))==-1){
@@ -952,7 +979,7 @@ int main(int argc, char **argv)
 		//fprintf(stderr,"\n >>> \n");
 
 		for(i=0;i<=fdmax;i++){
-
+			reset_the_timer = FALSE;
 			//fprintf(stderr, "checking fd %d\n",i);
 			if(FD_ISSET(i,&readfds)){
 				if(VERBOSE)
@@ -1086,6 +1113,7 @@ int main(int argc, char **argv)
 			}
 		}
 		//zprintf("tag");
+		/*
 		gettimeofday(&endtime,NULL);
 		if(DEBUG){
 			fprintf(stderr, "end-start: %g\n",(double)(endtime.tv_sec - starttime.tv_sec));
@@ -1104,7 +1132,16 @@ int main(int argc, char **argv)
 		runtime_timeout = (double)(r_update_interval -(endtime.tv_sec - starttime.tv_sec));
 
 		}
+		*/
 
+		if(reset_the_timer == FALSE){
+			gettimeofday(&endtime,NULL);
+			long duration = (endtime.tv_sec - starttime.tv_sec);
+			if(duration > r_update_interval)
+				send_updates();
+			else
+				runtime_timeout = (double)(r_update_interval -(endtime.tv_sec - starttime.tv_sec));
+		}
 
 
 	}
