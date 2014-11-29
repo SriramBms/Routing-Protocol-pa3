@@ -711,7 +711,8 @@ void parse_update_packet(char * i_msg){
 		if((j+1)==routing_table.selfid)
 			continue;
 		DnToY = cost_list[j];
-		if((CostToN + DnToY)<node_matrix[routing_table.selfid-1][j]){
+		long sum = CostToN + DnToY;
+		if(sum<node_matrix[routing_table.selfid-1][j]){
 			node_matrix[routing_table.selfid-1][j] = (CostToN + DnToY);
 			int index = get_routing_table_index_for_id(j+1);
 			routing_table.othernodes[index].nexthop = get_id_for_ip(source_addr);
