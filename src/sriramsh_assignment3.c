@@ -746,7 +746,7 @@ void parse_update_packet(char * i_msg){
 
 int get_routing_table_index_for_id(int id){
 	int j;
-	for(j = 0; j < MAX_NEIGHBORS; j++){
+	for(j = 0; j < MAX_NEIGHBORS+1; j++){
 		if(routing_table.othernodes[j].destid == id){
 			return j;
 		}
