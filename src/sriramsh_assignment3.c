@@ -895,6 +895,9 @@ int main(int argc, char **argv)
 	FD_SET(listener,&master);
 	fdmax = listener;
 	runtime_timeout = r_update_interval;
+
+	dump_routing_table(DISPLAY_MINIMAL);
+	print_cost_matrix();
 	for(;;){
 		FD_ZERO(&readfds);
 		readfds = master;
@@ -1058,6 +1061,9 @@ int main(int argc, char **argv)
 					num_received_packets++;
 
 					parse_update_packet(newMessage);
+
+					dump_routing_table(DISPLAY_MINIMAL);
+					print_cost_matrix();
 				}else{
 
 				}
