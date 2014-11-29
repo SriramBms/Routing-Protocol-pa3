@@ -737,7 +737,9 @@ void parse_update_packet(char * i_msg){
 			}
 
 		}
-
+		if(DEBUG){
+			fprintf(stderr, "---------QQQQQQQ| routetbl nexthop: %d cost %d\n", routing_table.othernodes[get_routing_table_index_for_id(3)].nexthop,routing_table.othernodes[get_routing_table_index_for_id(3)].cost  );
+		}
 	}
 
 }
