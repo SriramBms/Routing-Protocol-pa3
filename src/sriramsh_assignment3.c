@@ -719,7 +719,7 @@ void parse_update_packet(char * i_msg){
 		if(DEBUG){
 			fprintf(stderr, "---------- id: %d, DnToY: %d, costToN: %d, sum: %ld\n", j+1, DnToY, CostToN, sum);
 		}
-		if(sum<node_matrix[routing_table.selfid-1][j]){
+		if((CostToN + DnToY)<node_matrix[routing_table.selfid-1][j]){
 			node_matrix[routing_table.selfid-1][j] = (CostToN + DnToY);
 			int index = get_routing_table_index_for_id(j+1);
 			routing_table.othernodes[index].nexthop = get_id_for_ip(source_addr);
