@@ -732,7 +732,7 @@ void parse_update_packet(char * i_msg){
 			routing_table.othernodes[index].nexthop = get_id_for_ip(source_addr);
 			routing_table.othernodes[index].cost = (CostToN + DnToY);
 			if(DEBUG){
-				fprintf(stderr, "---------recv sum < present sum| index: %d\n", index);
+				fprintf(stderr, "---------recv sum < present sum| index: %d routetbl nexthop: %d cost %d\n", index,routing_table.othernodes[index].nexthop,routing_table.othernodes[index].cost  );
 			}
 
 		}
