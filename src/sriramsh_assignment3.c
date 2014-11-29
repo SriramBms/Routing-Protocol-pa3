@@ -1142,6 +1142,11 @@ gettimeofday(&starttime,NULL);
 				reset_the_timer = TRUE;
 			}else{
 				runtime_timeout = (double)(r_update_interval -(endtime.tv_sec - starttime.tv_sec));
+				if(runtime_timeout < 1.0){
+					send_updates();
+					reset_the_timer = TRUE;
+
+				}
 			}
 		}
 
