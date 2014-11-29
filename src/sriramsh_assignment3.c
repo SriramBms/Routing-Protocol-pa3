@@ -696,8 +696,10 @@ void parse_update_packet(char * i_msg){
 		ipaddress_list[n_server_id - 1] = recvupdpkt.nodes[j].serverip;
 		port_list[n_server_id - 1] = (recvupdpkt.nodes[j].serverport >> 16);
 		int costN = (recvupdpkt.nodes[j].f_id_cost <<  16) >> 16;
+		/*
 		if(costN == UINT16_MAX)
 			cost_list[n_server_id - 1] = 9999;
+			*/
 		if(DEBUG){
 			fprintf(stderr, " ++++++id: %d ipaddr: %d port %d cost %d\n",n_server_id, ipaddress_list[n_server_id - 1],port_list[n_server_id - 1],cost_list[n_server_id - 1]);
 
