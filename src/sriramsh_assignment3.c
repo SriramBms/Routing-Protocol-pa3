@@ -110,6 +110,16 @@ struct struct_routing_table{
 	struct routing_entry othernodes[MAX_NEIGHBORS+1];
 };
 
+struct struct_cost_hop{
+	int toId;
+	int hop;
+	int cost;
+};
+struct struct_last_packet{
+	int fromId;
+	struct struct_cost_hop costhop[MAX_NEIGHBORS+1];
+};
+
 
 
 //global variables
@@ -132,6 +142,7 @@ int reset_the_timer=TRUE;
 struct struct_update_packet update_packet = {0};
 int node_matrix[MAX_NEIGHBORS+1][MAX_NEIGHBORS+1]={0};
 struct timeval starttime, endtime;
+struct struct_last_packet last_packet[MAX_NEIGHBORS + 1] = {0};
 //function declarations
 void zprintf(char *);
 void read_topology_file();
@@ -633,6 +644,18 @@ int is_ip_valid(char * i_ip){
 	}
 }
 
+int is_node_a_neighbor(char * i_ip){
+	int j;
+	for(j = 0; j < MAX_NEIGHBORS + 1;j++){
+		if(strcmp(routing_table.othernodes[j].destip, i_ip)==0){
+			if(routing_table.othernodes[j].connected)
+				return TRUE;
+			else
+				return FALSE;
+		}
+	}
+}
+
 int get_id_for_ip(char * i_ip){
 	int j;
 	for(j = 0; j < MAX_NEIGHBORS + 1; j++){
@@ -690,7 +713,6 @@ void parse_update_packet(char * i_msg){
 	inet_ntop(AF_INET, &(rsn.sin_addr), source_addr, sizeof source_addr);
 
 
-
 	if(DEBUG){
 		//display contents of packet
 		fprintf(stderr, "Contents of received packet\n");
@@ -701,8 +723,13 @@ void parse_update_packet(char * i_msg){
 	if(!is_ip_valid(source_addr))
 		return;
 
-	int j;
+	if(!is_node_a_neighbor(source_addr)){
+		return;
+	}
+	int packetID = get_id_for_ip(source_addr);
+	last_packet[packetID-1].fromId = packetID;
 
+	int j;
 	uint32_t ipaddress_list[5];
 	int port_list[5];
 	int cost_list[5];
@@ -719,6 +746,10 @@ void parse_update_packet(char * i_msg){
 		if(costN == UINT16_MAX)
 			cost_list[n_server_id - 1] = 9999;
 			*/
+			last_packet[packetID-1].costhop[n_server_id-1].toId = n_server_id;
+			last_packet[packetID-1].costhop[n_server_id-1].cost = costN;
+			last_packet[packetID-1].costhop[n_server_id-1].hop = packetID;
+
 		if(DEBUG){
 			fprintf(stderr, " ++++++id: %d ipaddr: %d port %d cost %d\n",n_server_id, ipaddress_list[n_server_id - 1],port_list[n_server_id - 1],cost_list[n_server_id - 1]);
 
@@ -763,6 +794,69 @@ void parse_update_packet(char * i_msg){
 
 
 }
+
+
+void disable_node(int id){
+
+
+
+
+	/*
+	int node_index = get_routing_table_index_for_id(id);
+	if (node_index == MAX_NEIGHBORS){
+		routing_table.othernodes[node_index].valid = FALSE;
+		routing_table.othernodes[node_index].connected = FALSE;
+		routing_table.othernodes[node_index].cost = UINT16_MAX;
+
+		num_edges = num_edges -1;
+	}
+	int i;
+	int min_val[MAX_NEIGHBORS+1];
+	int min_node=0;
+	for(i = 0;i < MAX_NEIGHBORS+1;i++){
+		if((i+1)==id){
+			min_val[i]=UINT16_MAX;
+			continue;
+
+		}else{
+			int costToN = get_cost_for_id(i+1);
+			int DNtoY = last_packet[i].costhop[id-1].cost;
+			min_val[i]=costToN + DNtoY;
+			if(min_val[i]< min_val[min_node]){
+				min_node = i;
+
+			}
+		}
+
+
+	}
+
+	for(i = 0 ; i < MAX_NEIGHBORS +1;i++){
+		if(routing_table.othernodes[i].destid==id){
+			routing_table.othernodes[i].cost = min_val[min_node];
+			routing_table.othernodes[i].ne
+		}
+	}
+
+
+
+	//setup the cost matrix
+	int j,k;
+	for(j = 0;j < num_servers; j++){
+		if((j+1) == routing_table.selfid){
+			for(k = 0; k < num_servers; k++){
+				node_matrix[j][k] = get_cost_for_id(k+1);
+			}
+		}
+	}
+	*/
+
+}//end disable node
+
+
+
+
+
 
 int get_routing_table_index_for_id(int id){
 	int j;
@@ -1090,7 +1184,7 @@ gettimeofday(&starttime,NULL);
 								cse4589_print_and_log("%s:Invalid format: Update <server 1> < server 2> <cost>(%d)\n",tokencommand, strlen(command));
 								break;
 							}
-							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+
 							strncpy(infstr, cptr, 3);
 							uint16_t newcost = atoi(infstr);
 
@@ -1124,30 +1218,110 @@ gettimeofday(&starttime,NULL);
 								}
 							}
 							send_updates();
-
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							break;
 						case PACKETS:
-							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+
 							cse4589_print_and_log("%d\n",num_received_packets);
 							num_received_packets = 0;
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							break;
 						case STEP:
-							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+
 							/*create_update_packet();
 							send_udp_msg(routing_table.othernodes[3].destip, routing_table.othernodes[3].port);
 							*/
 							zprintf("2");
 							send_updates();
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							break;
 						case DISABLE:
+						;
+							uint16_t dserverID;
+							char * dptr;
+							dptr = strtok_r(NULL, " ", &tokenptr);
+							if(dptr == NULL){
+								cse4589_print_and_log("%s:Invalid format: Disable <server id> \n",tokencommand );
+								break;
+							}
+							dserverID = atoi(dptr);
+
+							if(dserverID == routing_table.selfid){
+								cse4589_print_and_log("%s:Invalid parameter: Cannot disable yourself \n",tokencommand );
+								break;
+							}
+
+							int j;
+							for(j = 0; j < MAX_NEIGHBORS +1; j++){
+								if(routing_table.othernodes[j].destid == dserverID){
+									if(!routing_table.othernodes[j].connected){
+										j=999;
+										cse4589_print_and_log("%s:Invalid parameter: specified node is not a neighbor \n",tokencommand );
+										break;
+										break;
+									}
+								}
+							}
+							if(j==999){
+								break;
+							}
+
+
+
+							for(j=0;j<MAX_NEIGHBORS+1;j++){
+								if(routing_table.othernodes[j].destid == dserverID){
+									if(!is_node_a_neighbor(routing_table.othernodes[j].destip)){
+										cse4589_print_and_log("%s:Given server ID is not a neighbor\n",tokencommand );
+										j=999;
+										break;
+									}
+								}
+							}
+
+							if(j==999){
+								break;
+							}
+
+
+							if(DEBUG){
+								fprintf(stderr, "TTTTTTTT disable %d", dserverID);
+
+							}
+
+							//disable_node(dserverID);
+							targetid = dserverID;
+							newcost = UINT16_MAX;
+							routing_table = init_costs;
+
+							for (ii = 0; ii < MAX_NEIGHBORS+1; ii++){
+								if(routing_table.othernodes[ii].destid == targetid)
+									routing_table.othernodes[ii].cost = newcost;
+							}
+							init_costs = routing_table;
+							routing_table.othernodes[get_routing_table_index_for_id(dserverID)].connected = FALSE;
+							routing_table.othernodes[get_routing_table_index_for_id(dserverID)].valid = FALSE;
+							//setup node matrix
+							//int jl,kl;
+							for(jl = 0;jl < num_servers; jl++){
+								if((jl+1) == routing_table.selfid){
+									for(kl = 0; kl < num_servers; kl++){
+										node_matrix[jl][kl] = get_cost_for_id(kl+1);
+									}
+								}
+							}
+							send_updates();
+
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+
 							break;
 						case CRASH:
 							break;
 						case DUMP:
 							break;
 						case INTEGRITY:
-							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+
 							cse4589_print_and_log("I have read and understood the course academic integrity policy \nlocated at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity\n");
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							break;
 						case COSTMAT:
 							print_cost_matrix();
