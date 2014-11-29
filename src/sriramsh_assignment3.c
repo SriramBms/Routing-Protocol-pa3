@@ -696,6 +696,7 @@ void parse_update_packet(char * i_msg){
 		ipaddress_list[n_server_id - 1] = recvupdpkt.nodes[j].serverip;
 		port_list[n_server_id - 1] = (recvupdpkt.nodes[j].serverport >> 16);
 		int costN = (recvupdpkt.nodes[j].f_id_cost <<  16) >> 16;
+		cost_list[n_server_id - 1] = costN;
 		/*
 		if(costN == UINT16_MAX)
 			cost_list[n_server_id - 1] = 9999;
@@ -727,7 +728,7 @@ void parse_update_packet(char * i_msg){
 			if(DEBUG){
 				fprintf(stderr, "---------recv sum < present sum| index: %d", index);
 			}
-			
+
 		}
 	}
 
