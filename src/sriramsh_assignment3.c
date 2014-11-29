@@ -130,7 +130,7 @@ int num_received_packets=0;
 double runtime_timeout;
 int reset_the_timer=TRUE;
 struct struct_update_packet update_packet = {0};
-int node_matrix[MAX_NEIGHBORS+1][MAX_NEIGHBORS+1]={UINT16_MAX};
+int node_matrix[MAX_NEIGHBORS+1][MAX_NEIGHBORS+1]={0};
 struct timeval starttime, endtime;
 //function declarations
 void zprintf(char *);
@@ -711,6 +711,9 @@ void parse_update_packet(char * i_msg){
 	//+++++++++ run DV algo +++++++++++++//
 
 	int CostToN = get_cost_to_node(get_id_for_ip(source_addr));
+	if(DEBUG){
+		fprintf(stderr, "neighbor id: %d \n", get_id_for_ip(source_addr));
+	}
 	int DnToY;
 	for(j = 0; j < num_fields; j++){
 		if((j+1)==routing_table.selfid)
