@@ -695,7 +695,9 @@ void parse_update_packet(char * i_msg){
 		n_server_id = (recvupdpkt.nodes[j].f_id_cost >> 16);
 		ipaddress_list[n_server_id - 1] = recvupdpkt.nodes[j].serverip;
 		port_list[n_server_id - 1] = (recvupdpkt.nodes[j].serverport >> 16);
-		cost_list[n_server_id - 1] = (recvupdpkt.nodes[j].f_id_cost <<  16) >> 16;
+		int costN = (recvupdpkt.nodes[j].f_id_cost <<  16) >> 16;
+		if(costN == UINT16_MAX)
+			cost_list[n_server_id - 1] = 9999;
 		if(DEBUG){
 			fprintf(stderr, " ++++++id: %d ipaddr: %d port %d cost %d\n",n_server_id, ipaddress_list[n_server_id - 1],port_list[n_server_id - 1],cost_list[n_server_id - 1]);
 
@@ -712,11 +714,18 @@ void parse_update_packet(char * i_msg){
 			continue;
 		DnToY = cost_list[j];
 		long sum = CostToN + DnToY;
+		if(DEBUG){
+			fprintf(stderr, "---------- id: %d, DnToY: %d, costToN: %d, sum: %ld\n", j+1, DnToY, CostToN, sum);
+		}
 		if(sum<node_matrix[routing_table.selfid-1][j]){
 			node_matrix[routing_table.selfid-1][j] = (CostToN + DnToY);
 			int index = get_routing_table_index_for_id(j+1);
 			routing_table.othernodes[index].nexthop = get_id_for_ip(source_addr);
 			routing_table.othernodes[index].cost = (CostToN + DnToY);
+			if(DEBUG){
+				fprintf(stderr, "---------recv sum < present sum| index: %d", index);
+			}
+			send_updates();
 		}
 	}
 
