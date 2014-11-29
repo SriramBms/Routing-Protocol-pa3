@@ -598,6 +598,8 @@ void send_udp_msg(char * i_ip, int i_port){
 		}
 		freeaddrinfo(ai);
 
+		close(sfd);
+
 
 
 
