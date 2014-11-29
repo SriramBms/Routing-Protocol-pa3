@@ -1103,6 +1103,9 @@ gettimeofday(&starttime,NULL);
 								fprintf(stderr, "Wrong input. Please try again\n");
 
 							}
+							if(DEBUG){
+								fprintf(stderr, "TTTTTTTTcommand: update %d %d %d \n", server1, server2, newcost);
+							}
 							routing_table = init_costs;
 							int ii;
 							for (ii = 0; ii < MAX_NEIGHBORS+1; ii++){
