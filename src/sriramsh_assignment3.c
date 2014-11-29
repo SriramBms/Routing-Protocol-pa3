@@ -753,13 +753,13 @@ void parse_update_packet(char * i_msg){
 			if(DEBUG){
 				fprintf(stderr, "---------recv sum < present sum| index: %d routetbl nexthop: %d cost %d\n", index,routing_table.othernodes[index].nexthop,routing_table.othernodes[index].cost  );
 			}
-			send_updates(); //send updates in case something has changed
+			 //send updates in case something has changed
 		}
 		if(DEBUG){
 			fprintf(stderr, "---------QQQQQQQ|index : %d routetbl nexthop: %d cost %d\n",get_routing_table_index_for_id(4), routing_table.othernodes[get_routing_table_index_for_id(4)].nexthop,routing_table.othernodes[get_routing_table_index_for_id(4)].cost  );
 		}
 	}
-
+	send_updates();
 
 }
 
