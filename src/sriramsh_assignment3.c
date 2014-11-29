@@ -208,7 +208,7 @@ void dump_routing_table(int mode){
 		sorted_table[ii].nexthop = routing_table.othernodes[ii].nexthop;
 
 		if(DEBUG){
-			fprintf(stderr, "DUMP TABLE: destid: %d, cost %d, nexthop: %d \n", sorted_table[ii].destid, sorted_table[ii].cost, sorted_table[ii].nexthop);
+			fprintf(stderr, "DUMP TABLE:ii:%d destid: %d, cost %d, nexthop: %d \n",ii, sorted_table[ii].destid, sorted_table[ii].cost, sorted_table[ii].nexthop);
 		}
 	}
 
