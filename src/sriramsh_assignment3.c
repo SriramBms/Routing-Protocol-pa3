@@ -1137,10 +1137,12 @@ gettimeofday(&starttime,NULL);
 		if(reset_the_timer == FALSE){
 			gettimeofday(&endtime,NULL);
 			long duration = (endtime.tv_sec - starttime.tv_sec);
-			if(duration > r_update_interval)
+			if(duration > r_update_interval){
 				send_updates();
-			else
+				reset_the_timer = TRUE;
+			}else{
 				runtime_timeout = (double)(r_update_interval -(endtime.tv_sec - starttime.tv_sec));
+			}
 		}
 
 
