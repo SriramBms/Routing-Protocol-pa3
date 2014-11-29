@@ -165,7 +165,23 @@ void strToLower(char string[]) {
 
 }
 
-
+int validcommand(char * command, int spaces){
+	int j,count;
+	for(j=0; command[j]!='\0'; j++){
+		zprintf("log");
+		if(command[j]==' '){
+			count++;
+			zprintf("count++");
+		}
+	}
+	if(count == spaces){
+		return TRUE;
+		zprintf("888command valid");
+	}else{
+		return FALSE;
+		zprinf("888command invalid");
+	}
+}
 
 void toggleDebugLevel(){
 	if(DEBUG)
@@ -737,12 +753,13 @@ void parse_update_packet(char * i_msg){
 			if(DEBUG){
 				fprintf(stderr, "---------recv sum < present sum| index: %d routetbl nexthop: %d cost %d\n", index,routing_table.othernodes[index].nexthop,routing_table.othernodes[index].cost  );
 			}
-
+			send_updates(); //send updates in case something has changed
 		}
 		if(DEBUG){
 			fprintf(stderr, "---------QQQQQQQ|index : %d routetbl nexthop: %d cost %d\n",get_routing_table_index_for_id(4), routing_table.othernodes[get_routing_table_index_for_id(4)].nexthop,routing_table.othernodes[get_routing_table_index_for_id(4)].cost  );
 		}
 	}
+
 
 }
 
@@ -1044,11 +1061,36 @@ gettimeofday(&starttime,NULL);
 							break;
 						case UPDATE:
 							;
-							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+
+
 							char infstr[3];
-							uint16_t server1 = atoi(strtok_r(NULL, " ", &tokenptr));
-							uint16_t server2 = atoi(strtok_r(NULL, " ", &tokenptr));
-							strncpy(infstr, strtok_r(NULL, " ", &tokenptr), 3);
+							uint16_t server1, server2;
+						//	uint16_t server1 = atoi(strtok_r(NULL, " ", &tokenptr));
+						//	uint16_t server2 = atoi(strtok_r(NULL, " ", &tokenptr));
+
+						char * cptr;
+							cptr = strtok_r(NULL, " ", &tokenptr);
+							if(cptr == NULL){
+								cse4589_print_and_log("%s:Invalid format: Update <server 1> < server 2> <cost>(%d)\n",tokencommand, strlen(command));
+								break;
+							}
+							server1 = atoi(cptr);
+
+							cptr = strtok_r(NULL, " ", &tokenptr);
+							if(cptr == NULL){
+								cse4589_print_and_log("%s:Invalid format: Update <server 1> < server 2> <cost>(%d)\n",tokencommand, strlen(command));
+								break;
+							}
+
+							server2 = atoi(cptr);
+
+							cptr = strtok_r(NULL, " ", &tokenptr);
+							if(cptr == NULL){
+								cse4589_print_and_log("%s:Invalid format: Update <server 1> < server 2> <cost>(%d)\n",tokencommand, strlen(command));
+								break;
+							}
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+							strncpy(infstr, cptr, 3);
 							uint16_t newcost = atoi(infstr);
 
 							if(strcmp(infstr, "inf")==0)
