@@ -144,6 +144,8 @@ int node_matrix[MAX_NEIGHBORS+1][MAX_NEIGHBORS+1]={0};
 struct timeval starttime, endtime;
 struct struct_last_packet last_packet[MAX_NEIGHBORS + 1] = {0};
 int has_crashed=FALSE;
+struct timeval node_timers[MAX_NEIGHBORS+1];
+struct timeval end_timer;
 //function declarations
 void zprintf(char *);
 void read_topology_file();
@@ -651,7 +653,7 @@ int is_node_a_neighbor(char * i_ip){
 	int j;
 	for(j = 0; j < MAX_NEIGHBORS + 1;j++){
 		if(strcmp(routing_table.othernodes[j].destip, i_ip)==0){
-			if(routing_table.othernodes[j].connected)
+			if(routing_table.othernodes[j].connected && (routing_table.othernodes[j].destid != routing_table.selfid))
 				return TRUE;
 			else
 				return FALSE;
@@ -730,7 +732,7 @@ void parse_update_packet(char * i_msg){
 		return;
 	}
 	int packetID = get_id_for_ip(source_addr);
-//	reset_counter(packetID);
+	gettimeofday(&node_timers[packetID-1], NULL);
 	last_packet[packetID-1].fromId = packetID;
 
 	int j;
@@ -900,7 +902,7 @@ void send_updates(){
 	create_update_packet();
 	int ii = 0;
 	for (ii = 0; ii < MAX_NEIGHBORS+1; ii++){
-		if(routing_table.othernodes[ii].connected){
+		if(routing_table.othernodes[ii].connected && (routing_table.othernodes[ii].destid != routing_table.selfid)){
 			send_udp_msg(routing_table.othernodes[ii].destip, routing_table.othernodes[ii].port);
 		}
 	}
@@ -1127,6 +1129,22 @@ gettimeofday(&starttime,NULL);
 			zprintf("select timeout");
 			//increment_pkt_counters();
 			send_updates();
+
+
+			gettimeofday(&end_timer, NULL);
+			int g;
+			for(g=0;g<MAX_NEIGHBORS+1;g++){
+				if(routing_table.othernodes[g].connected && (routing_table.othernodes[g].destid!=routing_table.selfid)){
+					int idx = routing_table.othernodes[g].destid - 1;
+					if((end_timer.tv_sec - node_timers[idx-1].tv_sec)> (3 * (long)r_update_interval)){
+						zprintf("Timer exceeded 3 for some");
+						routing_table.othernodes[g].connected = FALSE;
+						routing_table.othernodes[g].valid = FALSE;
+						routing_table.othernodes[g].cost = UINT16_MAX;
+					}
+				}
+			}
+
 
 			continue;
 		}
