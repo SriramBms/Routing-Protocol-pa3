@@ -734,6 +734,8 @@ void parse_update_packet(char * i_msg){
 		return;
 	}
 	int packetID = get_id_for_ip(source_addr);
+	cse4589_print_and_log("RECEIVED A MESSAGE FROM SERVER %d\n",packetID);
+
 
 	//gettimeofday(&node_timers[packetID-1], NULL);
 	//hack
@@ -781,6 +783,11 @@ void parse_update_packet(char * i_msg){
 
 	}
 
+
+	int jl;
+	for(jl=0;jl< MAX_NEIGHBORS+1;jl++){
+		cse4589_print_and_log("%-15d%-15d\n", jl+1,cost_list[jl]);
+	}
 	//+++++++++ run DV algo +++++++++++++//
 
 	int CostToN = get_cost_to_node(get_id_for_ip(source_addr));
@@ -1329,12 +1336,14 @@ gettimeofday(&starttime,NULL);
 							if(server1 == local_id && server2 != local_id){
 								targetid = server2;
 							}else{
-								fprintf(stderr, "Wrong input. Please try again\n");
+								cse4589_print_and_log("%s:Wrong input. Please try again\n");
 
 							}
 							if(DEBUG){
 								fprintf(stderr, "TTTTTTTTcommand: update %d %d %d \n", server1, server2, newcost);
 							}
+
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							routing_table = init_costs;
 							int ii;
 							for (ii = 0; ii < MAX_NEIGHBORS+1; ii++){
@@ -1353,13 +1362,13 @@ gettimeofday(&starttime,NULL);
 								}
 							}
 							send_updates();
-							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+
 							break;
 						case PACKETS:
-
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							cse4589_print_and_log("%d\n",num_received_packets);
 							num_received_packets = 0;
-							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+
 							break;
 
 						case STEP:
@@ -1398,7 +1407,7 @@ gettimeofday(&starttime,NULL);
 										j=999;
 										cse4589_print_and_log("%s:Invalid parameter: specified node is not a neighbor \n",tokencommand );
 										break;
-										break;
+
 									}
 								}
 							}
@@ -1427,7 +1436,7 @@ gettimeofday(&starttime,NULL);
 								fprintf(stderr, "TTTTTTTT disable %d", dserverID);
 
 							}
-
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							//disable_node(dserverID);
 							targetid = dserverID;
 							newcost = UINT16_MAX;
@@ -1451,19 +1460,24 @@ gettimeofday(&starttime,NULL);
 							}
 							send_updates();
 
-							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+
 
 							break;
 						case CRASH:
 							FD_CLR(listener, &master);
 							close(listener);
 							has_crashed = TRUE;
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							break;
 						case DUMP:
+							create_update_packet();
+							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+							cse4589_dump_packet(&update_packet, sizeof update_packet);
+
 							break;
 						case INTEGRITY:
 
-							cse4589_print_and_log("I have read and understood the course academic integrity policy \nlocated at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity\n");
+							cse4589_print_and_log("I have read and understood the course academic integrity policy located at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity");
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							break;
 						case COSTMAT:
