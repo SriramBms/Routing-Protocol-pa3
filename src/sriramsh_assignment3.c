@@ -856,9 +856,11 @@ void disable_node(int id){
 
 void increment_pkt_counters(){
 	int i;
+	zprintf("&&&&&&&&&&&&&&&&&&&&&&&&-------------INCREMENTING COUNTER");
 	for(i = 0; i < MAX_NEIGHBORS+1;i++){
 		routing_table.othernodes[i].num_tries++;
 		if(routing_table.othernodes[i].num_tries>=3){
+			zprintf("&&&&&&&&&&&&&&&&&&&&&&&&-------------COUNTER GREATER THAN 3");
 			routing_table.othernodes[i].connected = FALSE;
 			routing_table.othernodes[i].valid = FALSE;
 			routing_table.othernodes[i].cost = UINT16_MAX;
@@ -868,6 +870,7 @@ void increment_pkt_counters(){
 
 void reset_counter(int id){
 	int i;
+	zprintf("&&&&&&&&&&&&&&&&&&&&&&&&-------------RESETTING COUNTER");
 	for(i = 0; i < MAX_NEIGHBORS + 1; i++){
 		if(routing_table.othernodes[i].destid==id){
 			routing_table.othernodes[i].num_tries = 0;
