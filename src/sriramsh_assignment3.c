@@ -933,9 +933,28 @@ void remove_node(int id){
 	if(!routing_table.othernodes[idx].connected)
 		return;
 
+
+		routing_table = init_costs;
 			routing_table.othernodes[idx].connected = FALSE;
 			routing_table.othernodes[idx].valid = FALSE;
 			routing_table.othernodes[idx].cost = UINT16_MAX;
+
+
+			/////////////////////////////////////////////
+			init_costs = routing_table;
+
+
+			int jl,kl;
+			for(jl = 0;jl < num_servers; jl++){
+				if((jl+1) == routing_table.selfid){
+					for(kl = 0; kl < num_servers; kl++){
+						node_matrix[jl][kl] = get_cost_for_id(kl+1);
+					}
+				}
+			}
+
+
+			send_updates();
 
 }
 
