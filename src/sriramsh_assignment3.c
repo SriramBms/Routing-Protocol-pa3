@@ -1421,7 +1421,7 @@ gettimeofday(&starttime,NULL);
 			long duration = (endtime.tv_sec - starttime.tv_sec);
 			if(duration > r_update_interval){
 				send_updates();
-				increment_pkt_counters();
+				//increment_pkt_counters();
 				reset_the_timer = TRUE;
 			}else{
 				runtime_timeout = (double)(r_update_interval -(endtime.tv_sec - starttime.tv_sec));
