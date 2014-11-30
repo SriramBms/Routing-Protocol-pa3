@@ -1065,6 +1065,11 @@ int main(int argc, char **argv)
 
 	dump_routing_table(DISPLAY_MINIMAL);
 	print_cost_matrix();
+
+	int ll;
+	for(ll = 0; ll< MAX_NEIGHBORS+1; ll++){
+		gettimeofday(&node_timers[ll], NULL);
+	}
 	for(;;){
 		FD_ZERO(&readfds);
 		readfds = master;
@@ -1136,7 +1141,11 @@ gettimeofday(&starttime,NULL);
 			for(g=0;g<MAX_NEIGHBORS+1;g++){
 				if(routing_table.othernodes[g].connected && (routing_table.othernodes[g].destid!=routing_table.selfid)){
 					int idx = routing_table.othernodes[g].destid - 1;
-					if((end_timer.tv_sec - node_timers[idx-1].tv_sec)> (3 * (long)r_update_interval)){
+					long time_diff = (long)(end_timer.tv_sec - node_timers[idx-1].tv_sec);
+					if(DEBUG){
+						fprintf(stderr, "********@@ Timer difference:%ld - %ld = %ld\n",end_timer.tv_sec, node_timers[idx-1].tv_sec,  time_diff);
+					}
+					if(time_diff > (3 * (long)r_update_interval)){
 						zprintf("Timer exceeded 3 for some");
 						routing_table.othernodes[g].connected = FALSE;
 						routing_table.othernodes[g].valid = FALSE;
