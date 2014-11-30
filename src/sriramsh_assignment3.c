@@ -143,6 +143,7 @@ struct struct_update_packet update_packet = {0};
 int node_matrix[MAX_NEIGHBORS+1][MAX_NEIGHBORS+1]={0};
 struct timeval starttime, endtime;
 struct struct_last_packet last_packet[MAX_NEIGHBORS + 1] = {0};
+int has_crashed=FALSE;
 //function declarations
 void zprintf(char *);
 void read_topology_file();
@@ -887,6 +888,9 @@ int get_routing_table_index_for_id(int id){
 
 
 void send_updates(){
+	if(has_crashed){
+		return;
+	}
 	create_update_packet();
 	int ii = 0;
 	for (ii = 0; ii < MAX_NEIGHBORS+1; ii++){
@@ -1108,6 +1112,10 @@ gettimeofday(&starttime,NULL);
 			exit(6);
 		}
 		//zprintf("select fired");
+		if(has_crashed){
+			continue;
+		}
+
 		if(select_result == 0){
 			runtime_timeout = r_update_interval;
 			zprintf("select timeout");
@@ -1169,10 +1177,12 @@ gettimeofday(&starttime,NULL);
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							dump_routing_table(DISPLAY_MINIMAL);
 							break;
+
 						case DEBUGLVL:
 							//cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							toggleDebugLevel();
 							break;
+
 						case UPDATE:
 							;
 
@@ -1245,6 +1255,7 @@ gettimeofday(&starttime,NULL);
 							num_received_packets = 0;
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							break;
+
 						case STEP:
 
 							/*create_update_packet();
@@ -1254,6 +1265,8 @@ gettimeofday(&starttime,NULL);
 							send_updates();
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
 							break;
+
+
 						case DISABLE:
 						;
 							uint16_t dserverID;
@@ -1336,6 +1349,9 @@ gettimeofday(&starttime,NULL);
 
 							break;
 						case CRASH:
+							FD_CLR(listener, &master);
+							close(listener);
+							has_crashed = TRUE;
 							break;
 						case DUMP:
 							break;
