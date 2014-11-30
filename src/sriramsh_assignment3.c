@@ -124,7 +124,7 @@ struct struct_last_packet{
 
 //global variables
 char t_file_name[FILEPATH_LEN]; //topology file name
-float r_update_interval; // routing update interval
+long r_update_interval; // routing update interval
 int num_servers;
 int num_edges;
 struct struct_routing_table routing_table = {0}, init_costs = {0};
@@ -145,7 +145,9 @@ struct timeval starttime, endtime;
 struct struct_last_packet last_packet[MAX_NEIGHBORS + 1] = {0};
 int has_crashed=FALSE;
 struct timeval node_timers[MAX_NEIGHBORS+1];
+struct timeval nodet1, nodet2, nodet3, nodet4, nodet5;
 struct timeval end_timer;
+long timeout_interval;
 //function declarations
 void zprintf(char *);
 void read_topology_file();
@@ -732,7 +734,23 @@ void parse_update_packet(char * i_msg){
 		return;
 	}
 	int packetID = get_id_for_ip(source_addr);
-	gettimeofday(&node_timers[packetID-1], NULL);
+
+	//gettimeofday(&node_timers[packetID-1], NULL);
+	//hack
+	switch(packetID){
+		case 1: gettimeofday(&nodet1,NULL);
+						break;
+		case 2:	gettimeofday(&nodet2,NULL);
+						break;
+		case 3: gettimeofday(&nodet3,NULL);
+						break;
+		case 4: gettimeofday(&nodet4,NULL);
+						break;
+		case 5: gettimeofday(&nodet5,NULL);
+						break;
+	}
+
+
 	last_packet[packetID-1].fromId = packetID;
 
 	int j;
@@ -908,6 +926,19 @@ void send_updates(){
 	}
 
 }
+
+
+void remove_node(int id){
+	int i;
+	for(i=0;i<MAX_NEIGHBORS+1;i++){
+		if(routing_table.othernodes[i].destid==id){
+			routing_table.othernodes[i].connected = FALSE;
+			routing_table.othernodes[i].valid = FALSE;
+			routing_table.othernodes[i].cost = UINT16_MAX;
+		}
+	}
+}
+
 double get_current_time(){
 	struct timeval cur_time;
 	gettimeofday(&cur_time, NULL);
@@ -980,7 +1011,7 @@ int main(int argc, char **argv)
 	}
 
 	if(DEBUG){
-		fprintf(stderr, "Arguments: File name: %s Update interval %f \n", t_file_name, r_update_interval);
+		fprintf(stderr, "Arguments: File name: %s Update interval %ld \n", t_file_name, r_update_interval);
 	}
 	runtime_timeout = r_update_interval;
 	read_topology_file();
@@ -1002,7 +1033,7 @@ int main(int argc, char **argv)
 	int select_result=0;
 	//local vars
 
-
+	timeout_interval = 3 * r_update_interval;
 
 
 
@@ -1066,10 +1097,16 @@ int main(int argc, char **argv)
 	dump_routing_table(DISPLAY_MINIMAL);
 	print_cost_matrix();
 
-	int ll;
+	/*int ll;
 	for(ll = 0; ll< MAX_NEIGHBORS+1; ll++){
 		gettimeofday(&node_timers[ll], NULL);
 	}
+	*/
+	gettimeofday(&nodet1,NULL);
+	gettimeofday(&nodet2,NULL);
+	gettimeofday(&nodet3,NULL);
+	gettimeofday(&nodet4,NULL);
+	gettimeofday(&nodet5,NULL);
 	for(;;){
 		FD_ZERO(&readfds);
 		readfds = master;
@@ -1137,6 +1174,7 @@ gettimeofday(&starttime,NULL);
 
 
 			gettimeofday(&end_timer, NULL);
+			/*
 			int g;
 			for(g=0;g<MAX_NEIGHBORS+1;g++){
 				if(routing_table.othernodes[g].connected && (routing_table.othernodes[g].destid!=routing_table.selfid)){
@@ -1153,7 +1191,23 @@ gettimeofday(&starttime,NULL);
 					}
 				}
 			}
+			*/
 
+			if((end_timer.tv_sec - nodet1.tv_sec)> timeout_interval){
+				remove_node(1);
+			}
+			if((end_timer.tv_sec - nodet2.tv_sec)> timeout_interval){
+				remove_node(2);
+			}
+			if((end_timer.tv_sec - nodet3.tv_sec)> timeout_interval){
+				remove_node(3);
+			}
+			if((end_timer.tv_sec - nodet4.tv_sec)> timeout_interval){
+				remove_node(4);
+			}
+			if((end_timer.tv_sec - nodet5.tv_sec)> timeout_interval){
+				remove_node(5);
+			}
 
 			continue;
 		}
