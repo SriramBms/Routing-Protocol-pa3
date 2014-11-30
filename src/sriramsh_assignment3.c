@@ -158,6 +158,8 @@ void send_updates();
 int get_cost_for_id(int);
 void print_cost_matrix();
 int get_routing_table_index_for_id(int);
+void increment_pkt_counters();
+void reset_counter(int);
 //functions
 
 void loop_small(){
@@ -728,6 +730,7 @@ void parse_update_packet(char * i_msg){
 		return;
 	}
 	int packetID = get_id_for_ip(source_addr);
+	reset_counter(packetID);
 	last_packet[packetID-1].fromId = packetID;
 
 	int j;
