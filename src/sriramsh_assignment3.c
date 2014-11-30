@@ -1473,13 +1473,16 @@ gettimeofday(&starttime,NULL);
 						case DUMP:
 							create_update_packet();
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
-							cse4589_dump_packet(&update_packet, sizeof update_packet);
+							int byteswritten = cse4589_dump_packet(&update_packet, sizeof update_packet);
+							if(byteswritten != sizeof update_packet){
+								cse4589_print_and_log("%s:Dump failed. File partially written \n",tokencommand );
+							}
 
 							break;
 						case INTEGRITY:
-
-							cse4589_print_and_log("I have read and understood the course academic integrity policy located at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity");
 							cse4589_print_and_log("%s:SUCCESS\n",tokencommand);
+							cse4589_print_and_log("I have read and understood the course academic integrity policy located at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity");
+							fflush(stdout);
 							break;
 						case COSTMAT:
 							print_cost_matrix();
@@ -1492,7 +1495,7 @@ gettimeofday(&starttime,NULL);
 					}
 				}else if(i==listener){
 					FD_CLR(listener, &readfds);
-					fprintf(stderr, "Received something\n");
+					//fprintf(stderr, "Received something\n");
 					char newMessage[1024];
 					int bytesrecvd = recvfrom(listener, newMessage, sizeof newMessage, 0, NULL, NULL);
 					if(DEBUG){
