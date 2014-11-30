@@ -730,7 +730,7 @@ void parse_update_packet(char * i_msg){
 		return;
 	}
 	int packetID = get_id_for_ip(source_addr);
-	reset_counter(packetID);
+//	reset_counter(packetID);
 	last_packet[packetID-1].fromId = packetID;
 
 	int j;
@@ -1125,7 +1125,7 @@ gettimeofday(&starttime,NULL);
 		if(select_result == 0){
 			runtime_timeout = r_update_interval;
 			zprintf("select timeout");
-			increment_pkt_counters();
+			//increment_pkt_counters();
 			send_updates();
 
 			continue;
