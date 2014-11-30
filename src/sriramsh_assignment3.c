@@ -55,7 +55,7 @@
 #define DISPLAY_MINIMAL 2
 #define STDIN 0
 #define VERBOSE FALSE
-int debug = TRUE;
+int debug = FALSE;
 
 
 //constants
@@ -1119,9 +1119,10 @@ int main(int argc, char **argv)
 	FD_SET(listener,&master);
 	fdmax = listener;
 	runtime_timeout = r_update_interval;
-
+	if(DEBUG){
 	dump_routing_table(DISPLAY_MINIMAL);
 	print_cost_matrix();
+	}
 
 	/*int ll;
 	for(ll = 0; ll< MAX_NEIGHBORS+1; ll++){
@@ -1500,9 +1501,10 @@ gettimeofday(&starttime,NULL);
 					num_received_packets++;
 
 					parse_update_packet(newMessage);
-
+					if(DEBUG){
 					dump_routing_table(DISPLAY_MINIMAL);
 					print_cost_matrix();
+					}
 				}else{
 
 				}
