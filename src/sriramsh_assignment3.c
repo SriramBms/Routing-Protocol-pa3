@@ -929,14 +929,14 @@ void send_updates(){
 
 
 void remove_node(int id){
-	int i;
-	for(i=0;i<MAX_NEIGHBORS+1;i++){
-		if(routing_table.othernodes[i].destid==id){
-			routing_table.othernodes[i].connected = FALSE;
-			routing_table.othernodes[i].valid = FALSE;
-			routing_table.othernodes[i].cost = UINT16_MAX;
-		}
-	}
+	int idx = get_routing_table_index_for_id(id);
+	if(!routing_table.othernodes[idx].connected)
+		return;
+
+			routing_table.othernodes[idx].connected = FALSE;
+			routing_table.othernodes[idx].valid = FALSE;
+			routing_table.othernodes[idx].cost = UINT16_MAX;
+
 }
 
 double get_current_time(){
